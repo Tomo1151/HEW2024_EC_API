@@ -1,0 +1,1 @@
+{ "dependencies": { "@prisma/client": "^5.19.1", "hono": "^4.5.11", "prisma": "^5.19.1" } }

@@ -3,6 +3,9 @@ import { cors } from "hono/cors";
 
 import users from "./users";
 
+const packageJson = require("../package.json");
+const API_VERSION = packageJson.version;
+
 const app: Hono = new Hono();
 
 app.use(
@@ -17,12 +20,16 @@ app.use(
 
 app.route("/users", users);
 
-app.get("/", (ctx) => {
-  return ctx.text("Hello Hono!");
+app.get("/", (c) => {
+  return c.text("Hello Hono!");
 });
 
-app.get("/alive", (ctx) => {
-  return ctx.json({ status: "alive" });
+app.get("/alive", (c) => {
+  return c.json({ status: "alive" });
+});
+
+app.get("/version", (c) => {
+  return c.json({ version: API_VERSION });
 });
 
 export default app;

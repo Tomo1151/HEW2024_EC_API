@@ -27,7 +27,8 @@ model User {
   posts              Post[]
   cart_items         CartItem[]
   purchases          Purchase[]
-  follows            Follow[]
+  followers          Follow[]            @relation("Follower")
+  followees          Follow[]            @relation("Followee")
   reposts            Repost[]
   likes              Like[]
   licensed_downloads LicensedDownload[]
@@ -45,15 +46,13 @@ model Post {
   updated_at    DateTime?    @default(now()) @updatedAt
   author        User         @relation(fields: [userId], references: [id])
   product       Product?
-  reply         Post[]
-  reposts       Repost[]
+  reply         Post[]       @relation("Reply")
+  reposts       Repost[]     @relation("Repost")
   likes         Like[]
   tags          TaggedPost[]
   userId        String
-  Post          Post?        @relation("Repost", fields: [postId], references: [id])
+  Post          Post?        @relation("Reply", fields: [postId], references: [id])
   postId        String?
-  replyed       Post         @relation("Reply", fields: [replyId], references: [id])
-  replyId       String?
 }
 
 model Product {
@@ -68,14 +67,14 @@ model Product {
   updated_at     DateTime?  @default(now()) @updatedAt
   post           Post       @relation(fields: [postId], references: [id])
   cart_items     CartItem[]
-  postId         String
+  postId         String     @unique
   Purchase       Purchase[]
 }
 
 model Repost {
   id     String @id @unique @default(cuid())
   user   User   @relation(fields: [userId], references: [id])
-  post   Post   @relation(fields: [postId], references: [id])
+  post   Post   @relation("Repost", fields: [postId], references: [id])
   userId String
   postId String
 }
@@ -156,5 +155,6 @@ model RefreshTokens {
   token      String    @unique
   updated_at DateTime? @default(now()) @updatedAt
   user       User      @relation(fields: [userId], references: [id])
-  userId     String
+  userId     String    @unique
 }
+

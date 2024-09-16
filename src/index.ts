@@ -1,10 +1,13 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { getRouterName, showRoutes } from "hono/dev";
 
 import users from "./users";
+import auth from "./auth";
 
-const packageJson = require("../package.json");
-const API_VERSION = packageJson.version;
+const packageJson: { version: string } = require("../package.json");
+const API_VERSION: string = packageJson.version;
 
 const app: Hono = new Hono();
 
@@ -18,7 +21,9 @@ app.use(
   })
 );
 
+app.use(logger());
 app.route("/users", users);
+app.route("/auth", auth);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
@@ -32,4 +37,6 @@ app.get("/version", (c) => {
   return c.json({ version: API_VERSION });
 });
 
+showRoutes(app, { verbose: true });
+console.log(getRouterName(app), "\n");
 export default app;

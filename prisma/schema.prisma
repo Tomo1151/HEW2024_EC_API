@@ -27,12 +27,14 @@ model User {
   posts              Post[]
   cart_items         CartItem[]
   purchases          Purchase[]
-  followers          Follow[]            @relation("Follower")
-  followees          Follow[]            @relation("Followee")
+  followers          Follow[]           @relation("Follower")
+  followees          Follow[]           @relation("Followee")
   reposts            Repost[]
   likes              Like[]
   licensed_downloads LicensedDownload[]
   refresh_token      RefreshTokens?
+
+  @@map("users")
 }
 
 model Post {
@@ -53,6 +55,8 @@ model Post {
   userId        String
   Post          Post?        @relation("Reply", fields: [postId], references: [id])
   postId        String?
+
+  @@map("posts")
 }
 
 model Product {
@@ -69,6 +73,8 @@ model Product {
   cart_items     CartItem[]
   postId         String     @unique
   Purchase       Purchase[]
+
+  @@map("products")
 }
 
 model Repost {
@@ -77,6 +83,8 @@ model Repost {
   post   Post   @relation("Repost", fields: [postId], references: [id])
   userId String
   postId String
+
+  @@map("reposts")
 }
 
 model Like {
@@ -85,6 +93,8 @@ model Like {
   post   Post   @relation(fields: [postId], references: [id])
   userId String
   postId String
+
+  @@map("likes")
 }
 
 model Tag {
@@ -93,6 +103,8 @@ model Tag {
   created_at   DateTime?    @default(now())
   updated_at   DateTime?    @default(now()) @updatedAt
   tagged_posts TaggedPost[]
+
+  @@map("tags")
 }
 
 model TaggedPost {
@@ -101,6 +113,8 @@ model TaggedPost {
   post   Post   @relation(fields: [postId], references: [id])
   tagId  String
   postId String
+
+  @@map("tagged_posts")
 }
 
 model CartItem {
@@ -112,6 +126,8 @@ model CartItem {
   product    Product   @relation(fields: [productId], references: [id])
   userId     String
   productId  String
+
+  @@map("cart_items")
 }
 
 model Purchase {
@@ -123,14 +139,18 @@ model Purchase {
   user           User      @relation(fields: [userId], references: [id])
   productId      String
   userId         String
+
+  @@map("purchases")
 }
 
 model Follow {
-  id       String @id @unique @default(cuid())
-  follower User   @relation("Follower", fields: [followerId], references: [id])
-  followee User   @relation("Followee", fields: [followeeId], references: [id])
-  followerId   String
-  followeeId   String
+  id         String @id @unique @default(cuid())
+  follower   User   @relation("Follower", fields: [followerId], references: [id])
+  followee   User   @relation("Followee", fields: [followeeId], references: [id])
+  followerId String
+  followeeId String
+
+  @@map("follows")
 }
 
 model License {
@@ -140,6 +160,8 @@ model License {
   expires_at         DateTime?
   created_at         DateTime?          @default(now())
   licensed_downloads LicensedDownload[]
+
+  @@map("licenses")
 }
 
 model LicensedDownload {
@@ -148,6 +170,8 @@ model LicensedDownload {
   licensee  User    @relation(fields: [userId], references: [id])
   licenseId String
   userId    String
+
+  @@map("licensed_downloads")
 }
 
 model RefreshTokens {
@@ -156,5 +180,6 @@ model RefreshTokens {
   updated_at DateTime? @default(now()) @updatedAt
   user       User      @relation(fields: [userId], references: [id])
   userId     String    @unique
-}
 
+  @@map("refresh_tokens")
+}

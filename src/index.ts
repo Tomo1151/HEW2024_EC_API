@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
 import { getRouterName, showRoutes } from "hono/dev";
 
@@ -18,6 +19,12 @@ app.use(
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 300,
+  })
+);
+
+app.use(
+  csrf({
+    origin: ["http://localhost:3001"],
   })
 );
 

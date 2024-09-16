@@ -8,14 +8,14 @@ import { z } from "zod";
 const app: Hono = new Hono();
 const prisma: PrismaClient = new PrismaClient();
 
-interface User {
-  username: string;
-  nickname: string | null;
-  bio: string | null;
-  homepage_link: string | null;
-  icon_link: string | null;
-  created_at: Date;
-}
+// type User = {
+//   username: string;
+//   nickname: string | null;
+//   bio: string | null;
+//   homepage_link: string | null;
+//   icon_link: string | null;
+//   created_at: Date;
+// }
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -87,16 +87,11 @@ app.post(
     });
 
     // 返却用のユーザーデータを作成
-    const returnUserData: User = {
-      username: user.username,
-      nickname: user.nickname,
-      bio: user.bio,
-      homepage_link: user.homepage_link,
-      icon_link: user.icon_link,
-      created_at: user.created_at,
-    };
-
-    return c.json({ success: true, data: returnUserData }, 200);
+    {
+      const { id, email, hashed_password, updated_at, ...returnUserData } =
+        user;
+      return c.json({ success: true, data: returnUserData }, 200);
+    }
   }
 );
 

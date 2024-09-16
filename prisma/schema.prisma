@@ -22,8 +22,8 @@ model User {
   hashed_password    String
   homepage_link      String?
   icon_link          String?
-  created_at         DateTime?          @default(now())
-  updated_at         DateTime?          @default(now()) @updatedAt
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @default(now()) @updatedAt
   posts              Post[]
   cart_items         CartItem[]
   purchases          Purchase[]
@@ -44,8 +44,8 @@ model Post {
   like_count    Int?
   ref_count     Int?
   comment_count Int?
-  created_at    DateTime?    @default(now())
-  updated_at    DateTime?    @default(now()) @updatedAt
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @default(now()) @updatedAt
   author        User         @relation(fields: [userId], references: [id])
   product       Product?
   reply         Post[]       @relation("Reply")
@@ -66,9 +66,9 @@ model Product {
   product_link   String?    @unique
   thumbnail_link String?    @unique
   live_release   Boolean
-  release_date   DateTime?  @default(now())
-  created_at     DateTime?  @default(now())
-  updated_at     DateTime?  @default(now()) @updatedAt
+  release_date   DateTime   @default(now())
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @default(now()) @updatedAt
   post           Post       @relation(fields: [postId], references: [id])
   cart_items     CartItem[]
   postId         String     @unique
@@ -100,8 +100,8 @@ model Like {
 model Tag {
   id           String       @id @unique @default(cuid())
   name         String
-  created_at   DateTime?    @default(now())
-  updated_at   DateTime?    @default(now()) @updatedAt
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @default(now()) @updatedAt
   tagged_posts TaggedPost[]
 
   @@map("tags")
@@ -118,12 +118,12 @@ model TaggedPost {
 }
 
 model CartItem {
-  id         String    @id @unique @default(cuid())
+  id         String   @id @unique @default(cuid())
   amount     Int
-  created_at DateTime? @default(now())
-  updated_at DateTime? @default(now()) @updatedAt
-  user       User      @relation(fields: [userId], references: [id])
-  product    Product   @relation(fields: [productId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
   userId     String
   productId  String
 
@@ -131,12 +131,12 @@ model CartItem {
 }
 
 model Purchase {
-  id             String    @id @unique @default(cuid())
+  id             String   @id @unique @default(cuid())
   purchase_price Int
-  created_at     DateTime? @default(now())
-  updated_at     DateTime? @default(now()) @updatedAt
-  product        Product   @relation(fields: [productId], references: [id])
-  user           User      @relation(fields: [userId], references: [id])
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now()) @updatedAt
+  product        Product  @relation(fields: [productId], references: [id])
+  user           User     @relation(fields: [userId], references: [id])
   productId      String
   userId         String
 
@@ -157,8 +157,8 @@ model License {
   id                 String             @id @unique @default(cuid())
   license_key        String             @unique
   used_count         Int?
-  expires_at         DateTime?
-  created_at         DateTime?          @default(now())
+  expires_at         DateTime
+  created_at         DateTime           @default(now())
   licensed_downloads LicensedDownload[]
 
   @@map("licenses")
@@ -175,11 +175,11 @@ model LicensedDownload {
 }
 
 model RefreshTokens {
-  id         String    @id @unique @default(cuid())
-  token      String    @unique
-  updated_at DateTime? @default(now()) @updatedAt
-  user       User      @relation(fields: [userId], references: [id])
-  userId     String    @unique
+  id         String   @id @unique @default(cuid())
+  token      String   @unique
+  updated_at DateTime @default(now()) @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @unique
 
   @@map("refresh_tokens")
 }

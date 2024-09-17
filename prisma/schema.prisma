@@ -32,7 +32,7 @@ model User {
   reposts            Repost[]
   likes              Like[]
   licensed_downloads LicensedDownload[]
-  refresh_token      RefreshTokens?
+  refresh_token      RefreshToken?
 
   @@map("users")
 }
@@ -174,7 +174,7 @@ model LicensedDownload {
   @@map("licensed_downloads")
 }
 
-model RefreshTokens {
+model RefreshToken {
   id         String   @id @unique @default(cuid())
   token      String   @unique
   updated_at DateTime @default(now()) @updatedAt

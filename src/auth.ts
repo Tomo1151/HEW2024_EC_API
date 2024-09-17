@@ -1,15 +1,17 @@
 import { Hono } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { decode, sign, verify } from "hono/jwt";
+import { sign, verify } from "hono/jwt";
 import { zValidator } from "@hono/zod-validator";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
+
+import isAuthenticated from "./middlewares/isAuthenticated";
 
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
 // JWTの有効期限 (5分)
-const TOKEN_EXPIRY: number = 10;
+const TOKEN_EXPIRY: number = 60 * 1;
 // const TOKEN_EXPIRY: number = 60 * 5;
 
 // リフレッシュトークンの有効期限 (30日)
@@ -43,11 +45,7 @@ app.post(
     const { email, password } = c.req.valid("json");
 
     // ユーザーが存在するか否か&パスワードの検証
-    const user = await prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       return c.json(
@@ -226,24 +224,11 @@ app.post("/logout", async (c) => {
 });
 
 // 保護されたリソース (JWTの検証テスト用)
-app.get("/protected", async (c) => {
-  const token = getCookie(c, "access_token");
-
-  if (!token) {
-    return c.json({ success: false, error: "No token provided" }, 401);
-  }
-
-  if (!Bun.env.JWT_SECRET) {
-    throw new Error("JWT secret is not set");
-  }
-
+app.get("/protected", isAuthenticated, async (c) => {
   try {
-    const { sub } = await verify(token, Bun.env.JWT_SECRET);
-    if (!sub || typeof sub !== "string") {
-      throw new Error("Invalid token");
-    }
+    const userId = c.get("jwtPayload").sub;
 
-    return c.json({ success: true, data: "ok" }, 200);
+    return c.json({ success: true, data: { userId } }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Invalid token" }, 401);
   }

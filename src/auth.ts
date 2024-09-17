@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 
 const app: Hono = new Hono();
-const prisma: PrismaClient = new PrismaClient();
+const prisma = new PrismaClient();
 
 // type User = {
 //   username: string;

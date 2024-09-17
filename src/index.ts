@@ -4,8 +4,9 @@ import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
 import { getRouterName, showRoutes } from "hono/dev";
 
-import users from "./users";
 import auth from "./auth";
+import users from "./users";
+import posts from "./posts";
 
 const packageJson: { version: string } = require("../package.json");
 const API_VERSION: string = packageJson.version;
@@ -29,8 +30,9 @@ app.use(
 );
 
 app.use(logger());
-app.route("/users", users);
 app.route("/auth", auth);
+app.route("/users", users);
+app.route("/posts", posts);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
@@ -46,4 +48,5 @@ app.get("/version", (c) => {
 
 showRoutes(app, { verbose: true });
 console.log(getRouterName(app), "\n");
+
 export default app;

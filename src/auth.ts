@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { setCookie } from "hono/cookie";
-import { sign } from "hono/jwt";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { decode, sign, verify } from "hono/jwt";
 import { zValidator } from "@hono/zod-validator";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
@@ -8,14 +8,12 @@ import { z } from "zod";
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
-// type User = {
-//   username: string;
-//   nickname: string | null;
-//   bio: string | null;
-//   homepage_link: string | null;
-//   icon_link: string | null;
-//   created_at: Date;
-// }
+// JWTの有効期限 (5分)
+const TOKEN_EXPIRY: number = 10;
+// const TOKEN_EXPIRY: number = 60 * 5;
+
+// リフレッシュトークンの有効期限 (30日)
+const REFRESH_EXPIRY: number = 60 * 60 * 24 * 30;
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -27,6 +25,11 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
+
+type JWTPayload = {
+  sub: string;
+  exp: number;
+};
 
 // ログイン
 app.post(
@@ -69,21 +72,59 @@ app.post(
     if (!Bun.env.JWT_SECRET) {
       throw new Error("JWT secret is not set");
     }
-    const payload = {
+
+    if (!Bun.env.JWT_REFRESH) {
+      throw new Error("JWT refresh secret is not set");
+    }
+
+    const sessionPayload: JWTPayload = {
       sub: user.id,
-      exp: Math.round(Date.now() / 1000 + 60 * 60),
+      exp: Math.round(Date.now() / 1000 + TOKEN_EXPIRY),
     };
-    const sessionToken = await sign(payload, Bun.env.JWT_SECRET, "HS256");
+    const sessionToken = await sign(sessionPayload, Bun.env.JWT_SECRET, "HS256");
 
     // リフレッシュトークンの生成 @TODO DBへ保存，期限の設定
-    const refreshToken = await sign(payload, Bun.env.JWT_SECRET, "HS256");
+    const refreshPayload: JWTPayload = {
+      sub: user.id,
+      exp: Math.round(Date.now() / 1000 + REFRESH_EXPIRY),
+    };
+    const refreshToken = await sign(refreshPayload, Bun.env.JWT_REFRESH, "HS256");
+    try {
+      await prisma.refreshToken.upsert({
+        where: {
+          userId: user.id,
+        },
+        update: {
+          token: refreshToken,
+        },
+        create: {
+          token: refreshToken,
+          user: {
+            connect: {
+              id: user.id,
+            },
+          },
+        },
+      });
+    } catch (e) {
+      return c.json({ success: false, error: "Failed to create refresh token" }, 500);
+    }
 
+    // 本番環境ではsecure: true, __Host-を付与
     setCookie(c, "access_token", sessionToken, {
       path: "/",
       httpOnly: true,
       secure: false,
-      sameSite: "Lax",
-      maxAge: 60 * 5,
+      sameSite: "Strict",
+      maxAge: TOKEN_EXPIRY,
+    });
+
+    setCookie(c, "refresh_token", refreshToken, {
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Strict",
+      maxAge: REFRESH_EXPIRY,
     });
 
     // 返却用のユーザーデータを作成
@@ -123,5 +164,89 @@ app.post(
     return c.json({ success: true, message: "User created" }, 201);
   }
 );
+
+// トークンのリフレッシュ
+app.post("/refresh", async (c) => {
+  const refreshToken = getCookie(c, "refresh_token");
+
+  if (!refreshToken) {
+    return c.json({ success: false, error: "No refresh token provided" }, 401);
+  }
+
+  if (!Bun.env.JWT_SECRET) {
+    throw new Error("JWT secret is not set");
+  }
+
+  if (!Bun.env.JWT_REFRESH) {
+    throw new Error("JWT refresh secret is not set");
+  }
+
+  try {
+    const { sub } = await verify(refreshToken, Bun.env.JWT_REFRESH);
+    if (!sub || typeof sub !== "string") {
+      throw new Error("Invalid token");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        id: sub
+      },
+    });
+
+    if (!user) {
+      return c.json({ success: false, error: "User not found" }, 404);
+    }
+
+    const sessionPayload = {
+      sub: user.id,
+      exp: Math.round(Date.now() / 1000 + TOKEN_EXPIRY),
+    };
+    const sessionToken = await sign(sessionPayload, Bun.env.JWT_SECRET, "HS256");
+
+    setCookie(c, "access_token", sessionToken, {
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Strict",
+      maxAge: TOKEN_EXPIRY,
+    });
+
+    return c.json({ success: true, message: "Token refreshed"}, 200);
+  } catch (e) {
+    return c.json({ success: false, error: "Invalid refresh token" }, 401);
+  }
+});
+
+// ログアウト
+app.post("/logout", async (c) => {
+  deleteCookie(c, "access_token", { path: "/" });
+  deleteCookie(c, "refresh_token", { path: "/" });
+
+  return c.json({ success: true, message: "Logged out" }, 200);
+});
+
+// 保護されたリソース (JWTの検証テスト用)
+app.get("/protected", async (c) => {
+  const token = getCookie(c, "access_token");
+
+  if (!token) {
+    return c.json({ success: false, error: "No token provided" }, 401);
+  }
+
+  if (!Bun.env.JWT_SECRET) {
+    throw new Error("JWT secret is not set");
+  }
+
+  try {
+    const { sub } = await verify(token, Bun.env.JWT_SECRET);
+    if (!sub || typeof sub !== "string") {
+      throw new Error("Invalid token");
+    }
+
+    return c.json({ success: true, data: "ok" }, 200);
+  } catch (e) {
+    return c.json({ success: false, error: "Invalid token" }, 401);
+  }
+});
 
 export default app;

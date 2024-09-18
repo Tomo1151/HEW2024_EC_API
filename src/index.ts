@@ -35,7 +35,7 @@ app.route("/users", users);
 app.route("/posts", posts);
 
 app.get("/", (c) => {
-  return c.text("Hello Hono!");
+  return c.text("Hello Hono! 🔥");
 });
 
 app.get("/alive", (c) => {

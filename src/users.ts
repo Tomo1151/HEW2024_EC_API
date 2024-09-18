@@ -4,6 +4,7 @@ import { Hono } from "hono";
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
+// ユーザー一覧
 app.get("/", async (c) => {
   try {
     const users = await prisma.user.findMany({
@@ -23,6 +24,7 @@ app.get("/", async (c) => {
   }
 });
 
+// usernameでユーザーを取得
 app.get("/:username", async (c) => {
   let user;
   try {

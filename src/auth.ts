@@ -17,11 +17,13 @@ const TOKEN_EXPIRY: number = 60 * 1;
 // リフレッシュトークンの有効期限 (30日)
 const REFRESH_EXPIRY: number = 60 * 60 * 24 * 30;
 
+// ログインPOSTのスキーマ
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
 
+// ユーザー登録POSTのスキーマ
 const registerSchema = z.object({
   username: z.string().min(3),
   email: z.string().email(),
@@ -36,6 +38,7 @@ type JWTPayload = {
 // ログイン
 app.post(
   "/login",
+  // リクエストボディのバリデーション (middleware)
   zValidator("json", loginSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: result.error }, 400);
@@ -45,7 +48,13 @@ app.post(
     const { email, password } = c.req.valid("json");
 
     // ユーザーが存在するか否か&パスワードの検証
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user;
+
+    try {
+      user = await prisma.user.findUnique({ where: { email } });
+    } catch (e) {
+      return c.json({ success: false, error: "Internal server error" }, 500);
+    }
 
     if (!user) {
       return c.json(
@@ -54,6 +63,7 @@ app.post(
       );
     }
 
+    // パスワードの検証
     const isPasswordValid = await Bun.password.verify(
       password,
       user.hashed_password
@@ -75,18 +85,27 @@ app.post(
       throw new Error("JWT refresh secret is not set");
     }
 
+    // セッションのJWTペイロード
     const sessionPayload: JWTPayload = {
       sub: user.id,
       exp: Math.round(Date.now() / 1000 + TOKEN_EXPIRY),
     };
-    const sessionToken = await sign(sessionPayload, Bun.env.JWT_SECRET, "HS256");
+    const sessionToken = await sign(
+      sessionPayload,
+      Bun.env.JWT_SECRET,
+      "HS256"
+    );
 
-    // リフレッシュトークンの生成 @TODO DBへ保存，期限の設定
+    // リフレッシュトークンの生成，DBへの保存
     const refreshPayload: JWTPayload = {
       sub: user.id,
       exp: Math.round(Date.now() / 1000 + REFRESH_EXPIRY),
     };
-    const refreshToken = await sign(refreshPayload, Bun.env.JWT_REFRESH, "HS256");
+    const refreshToken = await sign(
+      refreshPayload,
+      Bun.env.JWT_REFRESH,
+      "HS256"
+    );
     try {
       await prisma.refreshToken.upsert({
         where: {
@@ -105,7 +124,10 @@ app.post(
         },
       });
     } catch (e) {
-      return c.json({ success: false, error: "Failed to create refresh token" }, 500);
+      return c.json(
+        { success: false, error: "Failed to create refresh token" },
+        500
+      );
     }
 
     // 本番環境ではsecure: true, __Host-を付与
@@ -125,7 +147,7 @@ app.post(
       maxAge: REFRESH_EXPIRY,
     });
 
-    // 返却用のユーザーデータを作成
+    // レスポンス用のユーザーデータを作成
     {
       const { id, email, hashed_password, updated_at, ...returnUserData } =
         user;
@@ -180,6 +202,7 @@ app.post("/refresh", async (c) => {
   }
 
   try {
+    // JWTペイロードからユーザーIDを抽出
     const { sub } = await verify(refreshToken, Bun.env.JWT_REFRESH);
     if (!sub || typeof sub !== "string") {
       throw new Error("Invalid token");
@@ -187,7 +210,7 @@ app.post("/refresh", async (c) => {
 
     const user = await prisma.user.findUnique({
       where: {
-        id: sub
+        id: sub,
       },
     });
 
@@ -195,11 +218,16 @@ app.post("/refresh", async (c) => {
       return c.json({ success: false, error: "User not found" }, 404);
     }
 
+    // 新しいセッションのJWTを生成，付与
     const sessionPayload = {
       sub: user.id,
       exp: Math.round(Date.now() / 1000 + TOKEN_EXPIRY),
     };
-    const sessionToken = await sign(sessionPayload, Bun.env.JWT_SECRET, "HS256");
+    const sessionToken = await sign(
+      sessionPayload,
+      Bun.env.JWT_SECRET,
+      "HS256"
+    );
 
     setCookie(c, "access_token", sessionToken, {
       path: "/",
@@ -209,7 +237,7 @@ app.post("/refresh", async (c) => {
       maxAge: TOKEN_EXPIRY,
     });
 
-    return c.json({ success: true, message: "Token refreshed"}, 200);
+    return c.json({ success: true, message: "Token refreshed" }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Invalid refresh token" }, 401);
   }

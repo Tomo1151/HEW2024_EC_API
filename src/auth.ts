@@ -170,18 +170,23 @@ app.post(
     const hashedPassword = await Bun.password.hash(password);
 
     try {
-      await prisma.user.create({
+      const user = await prisma.user.create({
         data: {
           username,
           email,
           hashed_password: hashedPassword,
         },
       });
+
+      // レスポンス用のユーザーデータを作成
+      {
+        const { id, email, hashed_password, updated_at, ...returnUserData } =
+          user;
+        return c.json({ success: true, data: returnUserData }, 201);
+      }
     } catch (e) {
       return c.json({ success: false, error: "User already exists" }, 400);
     }
-
-    return c.json({ success: true, message: "User created" }, 201);
   }
 );
 

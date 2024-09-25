@@ -29,7 +29,7 @@ app.get("/:username", async (c) => {
   let user;
   try {
     const username = c.req.param("username");
-    user = await prisma.user.findUnique({
+    user = await prisma.user.findUniqueOrThrow({
       where: { username },
       select: {
         username: true,

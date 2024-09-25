@@ -41,8 +41,7 @@ app.get("/:username", async (c) => {
       },
     });
   } catch (e) {
-    console.log(e);
-    return c.json({ success: false, error: "User not found" }, 400);
+    return c.json({ success: false, error: "User not found" }, 404);
   }
   return c.json({ success: true, data: user }, 200);
 });

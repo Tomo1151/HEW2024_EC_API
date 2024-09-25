@@ -256,6 +256,16 @@ app.post("/logout", async (c) => {
   return c.json({ success: true, message: "Logged out" }, 200);
 });
 
+app.post("/fetch", isAuthenticated, async (c) => {
+  try {
+    const userId = c.get("jwtPayload").sub;
+
+    return c.json({ success: true, data: { userId } }, 200);
+  } catch (e) {
+    return c.json({ success: false, error: "Invalid token" }, 401);
+  }
+});
+
 // 保護されたリソース (JWTの検証テスト用)
 app.get("/protected", isAuthenticated, async (c) => {
   try {

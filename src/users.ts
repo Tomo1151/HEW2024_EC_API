@@ -148,4 +148,35 @@ app.get("/:username/posts", async (c) => {
   return c.json({ success: true, data: posts, length: posts.length }, 200);
 });
 
+// ユーザーを削除
+app.delete("/:username", isAuthenticated, async (c) => {
+  const userId = c.get("jwtPayload").sub;
+  const username = c.req.param("username");
+  try {
+    // リクエストユーザーが削除しようとしているユーザーか確認
+    const reqUser = await prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { username: true },
+    });
+
+    if (reqUser.username !== username) {
+      return c.json(
+        {
+          success: false,
+          error: "You can only delete your own user",
+          data: null,
+        },
+        403
+      );
+    }
+
+    await prisma.user.delete({
+      where: { username },
+    });
+  } catch (e) {
+    return c.json({ success: false, error: "Failed to delete user" }, 500);
+  }
+  return c.json({ success: true }, 200);
+});
+
 export default app;

@@ -7,7 +7,7 @@ import isAuthenticated from "./middlewares/isAuthenticated";
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
-const postSchema = z.object({
+const postCreateSchema = z.object({
   content: z.string().min(1),
 });
 
@@ -39,7 +39,7 @@ app.get("/:id", async (c) => {
 app.post(
   "/",
   isAuthenticated,
-  zValidator("json", postSchema, (result, c) => {
+  zValidator("json", postCreateSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: result.error, data: null }, 400);
     }

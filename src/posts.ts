@@ -64,4 +64,77 @@ app.post(
   }
 );
 
+// 投稿を更新
+app.put(
+  "/:id",
+  isAuthenticated,
+  zValidator("json", postCreateSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: result.error }, 400);
+    }
+  }),
+  async (c) => {
+    const userId = c.get("jwtPayload").sub;
+    const { content }: { content: string } = c.req.valid("json");
+    try {
+      const post = await prisma.post.findUniqueOrThrow({
+        where: {
+          id: c.req.param("id"),
+        },
+      });
+      if (post.userId !== userId) {
+        return c.json(
+          {
+            success: false,
+            error: "You can only update your own post",
+            data: null,
+          },
+          403
+        );
+      }
+      await prisma.post.update({
+        where: {
+          id: c.req.param("id"),
+        },
+        data: {
+          content,
+        },
+      });
+      return c.json({ success: true }, 200);
+    } catch {
+      return c.json({ success: false, error: "Failed to update post" }, 400);
+    }
+  }
+);
+
+// 投稿を削除
+app.delete("/:id", isAuthenticated, async (c) => {
+  const userId = c.get("jwtPayload").sub;
+  try {
+    const post = await prisma.post.findUniqueOrThrow({
+      where: {
+        id: c.req.param("id"),
+      },
+    });
+    if (post.userId !== userId) {
+      return c.json(
+        {
+          success: false,
+          error: "You can only delete your own post",
+          data: null,
+        },
+        403
+      );
+    }
+    await prisma.post.delete({
+      where: {
+        id: c.req.param("id"),
+      },
+    });
+    return c.json({ success: true }, 200);
+  } catch {
+    return c.json({ success: false, error: "Failed to delete post" }, 400);
+  }
+});
+
 export default app;

@@ -8,8 +8,8 @@ async function isAuthenticated(c: Context, next: Next) {
       throw new Error("JWT_SECRET_KEY is not set");
     }
 
-    const token = getCookie(c, "access_token");
-    const refreshToken = getCookie(c, "refresh_token");
+    const token = getCookie(c, "__Host-access_token");
+    const refreshToken = getCookie(c, "__Host-refresh_token");
 
     if (!token) {
       if (refreshToken) {

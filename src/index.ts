@@ -53,7 +53,7 @@ export default {
   fetch: app.fetch,
   port: 3000,
   tls: {
-    key: Bun.file("./cert/server.key"),
-    cert: Bun.file("./cert/server.crt"),
+    key: Bun.file("../cert/server.key"),
+    cert: Bun.file("../cert/server.crt"),
   },
 };

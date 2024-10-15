@@ -134,6 +134,3 @@ out
 
 # Prisma migration
 prisma/migrations/
-
-# certification
-cert/

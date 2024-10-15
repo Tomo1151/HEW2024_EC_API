@@ -10,6 +10,10 @@ import isAuthenticated from "./middlewares/isAuthenticated";
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
+// トークンのクッキー名
+const ACCESS_TOKEN: string = "__Host-access_token";
+const REFRESH_TOKEN: string = "__Host-refresh_token";
+
 // JWTの有効期限 (5分)
 const TOKEN_EXPIRY: number = 60 * 1;
 // const TOKEN_EXPIRY: number = 60 * 5;
@@ -131,7 +135,7 @@ app.post(
     }
 
     // 本番環境ではsecure: true, __Host-を付与
-    setCookie(c, "__Host-access_token", sessionToken, {
+    setCookie(c, ACCESS_TOKEN, sessionToken, {
       path: "/",
       httpOnly: true,
       // secure: false,
@@ -140,7 +144,7 @@ app.post(
       maxAge: TOKEN_EXPIRY,
     });
 
-    setCookie(c, "__Host-refresh_token", refreshToken, {
+    setCookie(c, REFRESH_TOKEN, refreshToken, {
       path: "/",
       httpOnly: true,
       // secure: false,
@@ -194,7 +198,7 @@ app.post(
 
 // トークンのリフレッシュ
 app.post("/refresh", async (c) => {
-  const refreshToken = getCookie(c, "refresh_token");
+  const refreshToken = getCookie(c, REFRESH_TOKEN);
 
   if (!refreshToken) {
     return c.json({ success: false, error: "No refresh token provided" }, 401);
@@ -236,7 +240,7 @@ app.post("/refresh", async (c) => {
       "HS256"
     );
 
-    setCookie(c, "access_token", sessionToken, {
+    setCookie(c, ACCESS_TOKEN, sessionToken, {
       path: "/",
       httpOnly: true,
       secure: false,
@@ -252,8 +256,18 @@ app.post("/refresh", async (c) => {
 
 // ログアウト
 app.post("/logout", async (c) => {
-  deleteCookie(c, "access_token", { path: "/" });
-  deleteCookie(c, "refresh_token", { path: "/" });
+  deleteCookie(c, ACCESS_TOKEN, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: true,
+  });
+  deleteCookie(c, REFRESH_TOKEN, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "Strict",
+    secure: true,
+  });
 
   return c.json({ success: true, message: "Logged out" }, 200);
 });

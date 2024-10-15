@@ -16,7 +16,7 @@ const app: Hono = new Hono();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3001"],
+    origin: ["https://localhost:3001"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 300,
@@ -49,4 +49,11 @@ app.get("/version", (c) => {
 showRoutes(app, { verbose: true });
 console.log(getRouterName(app), "\n");
 
-export default app;
+export default {
+  fetch: app.fetch,
+  port: 3000,
+  tls: {
+    key: Bun.file("./cert/server.key"),
+    cert: Bun.file("./cert/server.crt"),
+  },
+};

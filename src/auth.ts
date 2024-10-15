@@ -131,18 +131,20 @@ app.post(
     }
 
     // 本番環境ではsecure: true, __Host-を付与
-    setCookie(c, "access_token", sessionToken, {
+    setCookie(c, "__Host-access_token", sessionToken, {
       path: "/",
       httpOnly: true,
-      secure: false,
+      // secure: false,
+      secure: true,
       sameSite: "Strict",
       maxAge: TOKEN_EXPIRY,
     });
 
-    setCookie(c, "refresh_token", refreshToken, {
+    setCookie(c, "__Host-refresh_token", refreshToken, {
       path: "/",
       httpOnly: true,
-      secure: false,
+      // secure: false,
+      secure: true,
       sameSite: "Strict",
       maxAge: REFRESH_EXPIRY,
     });

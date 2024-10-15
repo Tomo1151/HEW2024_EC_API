@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import isAuthenticated from "./middlewares/isAuthenticated";
 
+// MARK: 定数宣言
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
@@ -39,7 +40,7 @@ type JWTPayload = {
   exp: number;
 };
 
-// ログイン
+// MARK: ログイン
 app.post(
   "/login",
   // リクエストボディのバリデーション (middleware)
@@ -138,7 +139,6 @@ app.post(
     setCookie(c, ACCESS_TOKEN, sessionToken, {
       path: "/",
       httpOnly: true,
-      // secure: false,
       secure: true,
       sameSite: "Strict",
       maxAge: TOKEN_EXPIRY,
@@ -147,7 +147,6 @@ app.post(
     setCookie(c, REFRESH_TOKEN, refreshToken, {
       path: "/",
       httpOnly: true,
-      // secure: false,
       secure: true,
       sameSite: "Strict",
       maxAge: REFRESH_EXPIRY,
@@ -162,7 +161,7 @@ app.post(
   }
 );
 
-// ユーザー登録
+// MARK: ユーザー登録
 app.post(
   "/register",
   zValidator("json", registerSchema, (result, c) => {
@@ -196,7 +195,7 @@ app.post(
   }
 );
 
-// トークンのリフレッシュ
+// MARK: トークンのリフレッシュ
 app.post("/refresh", async (c) => {
   const refreshToken = getCookie(c, REFRESH_TOKEN);
 
@@ -223,6 +222,15 @@ app.post("/refresh", async (c) => {
       where: {
         id: sub,
       },
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        bio: true,
+        homepage_link: true,
+        icon_link: true,
+        created_at: true,
+      },
     });
 
     if (!user) {
@@ -243,18 +251,23 @@ app.post("/refresh", async (c) => {
     setCookie(c, ACCESS_TOKEN, sessionToken, {
       path: "/",
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: "Strict",
       maxAge: TOKEN_EXPIRY,
     });
 
-    return c.json({ success: true, message: "Token refreshed" }, 200);
+    const { id, ...returnUserData } = user;
+
+    return c.json(
+      { success: true, message: "Token refreshed", data: returnUserData },
+      200
+    );
   } catch (e) {
     return c.json({ success: false, error: "Invalid refresh token" }, 401);
   }
 });
 
-// ログアウト
+// MARK: ログアウト
 app.post("/logout", async (c) => {
   deleteCookie(c, ACCESS_TOKEN, {
     path: "/",
@@ -272,17 +285,32 @@ app.post("/logout", async (c) => {
   return c.json({ success: true, message: "Logged out" }, 200);
 });
 
+// MARK: フェッチ
 app.post("/fetch", isAuthenticated, async (c) => {
   try {
     const userId = c.get("jwtPayload").sub;
 
-    return c.json({ success: true, data: { userId } }, 200);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: {
+        id: userId,
+      },
+      select: {
+        username: true,
+        nickname: true,
+        bio: true,
+        homepage_link: true,
+        icon_link: true,
+        created_at: true,
+      },
+    });
+
+    return c.json({ success: true, data: user }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Invalid token" }, 401);
   }
 });
 
-// 保護されたリソース (JWTの検証テスト用)
+// MARK: 保護されたリソース (JWTの検証テスト用)
 app.get("/protected", isAuthenticated, async (c) => {
   try {
     const userId = c.get("jwtPayload").sub;

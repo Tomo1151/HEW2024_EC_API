@@ -22,6 +22,7 @@ const TOKEN_EXPIRY: number = 60 * 1;
 // リフレッシュトークンの有効期限 (30日)
 const REFRESH_EXPIRY: number = 60 * 60 * 24 * 30;
 
+// MARK: スキーマ定義
 // ログインPOSTのスキーマ
 const loginSchema = z.object({
   email: z.string().email(),

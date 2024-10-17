@@ -4,9 +4,11 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated";
 
+// MARK: 定数宣言
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
+// MARK: スキーマ定義
 // ユーザーの編集PUTのスキーマ
 const userUpdateSchema = z
   .object({
@@ -18,7 +20,7 @@ const userUpdateSchema = z
   .partial()
   .strict();
 
-// ユーザー一覧
+// MARK: ユーザー一覧
 app.get("/", async (c) => {
   try {
     const users = await prisma.user.findMany({
@@ -38,7 +40,7 @@ app.get("/", async (c) => {
   }
 });
 
-// usernameでユーザーを取得
+// MARK: usernameでユーザーを取得
 app.get("/:username", async (c) => {
   let user;
   try {
@@ -60,7 +62,7 @@ app.get("/:username", async (c) => {
   return c.json({ success: true, data: user }, 200);
 });
 
-// ユーザーの編集
+// MARK: ユーザーの編集
 app.put(
   "/:username",
   isAuthenticated,
@@ -107,7 +109,7 @@ app.put(
   }
 );
 
-// usernameのユーザーが作成した投稿を取得
+// MARK: usernameのユーザーが作成した投稿を取得
 app.get("/:username/posts", async (c) => {
   let posts;
   try {
@@ -148,7 +150,7 @@ app.get("/:username/posts", async (c) => {
   return c.json({ success: true, data: posts, length: posts.length }, 200);
 });
 
-// ユーザーを削除
+// MARK: ユーザーを削除
 app.delete("/:username", isAuthenticated, async (c) => {
   const userId = c.get("jwtPayload").sub;
   const username = c.req.param("username");

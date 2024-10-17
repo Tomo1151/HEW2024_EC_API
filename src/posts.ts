@@ -4,14 +4,17 @@ import { Hono } from "hono";
 import { z } from "zod";
 import isAuthenticated from "./middlewares/isAuthenticated";
 
+// MARK: 定数宣言
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
+// MARK: スキーマ定義
+// 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
 });
 
-// すべての投稿を取得 (テスト用)
+// MARK: すべての投稿を取得 (テスト用)
 app.get("/", async (c) => {
   try {
     const posts = await prisma.post.findMany();
@@ -21,7 +24,7 @@ app.get("/", async (c) => {
   }
 });
 
-// IDで指定された投稿を取得
+// MARK: IDで指定された投稿を取得
 app.get("/:id", async (c) => {
   try {
     const post = await prisma.post.findUnique({
@@ -35,7 +38,7 @@ app.get("/:id", async (c) => {
   }
 });
 
-// 投稿を作成
+// MARK: 投稿を作成
 app.post(
   "/",
   isAuthenticated,
@@ -64,7 +67,7 @@ app.post(
   }
 );
 
-// 投稿を更新
+// MARK: 投稿を更新
 app.put(
   "/:id",
   isAuthenticated,
@@ -107,7 +110,7 @@ app.put(
   }
 );
 
-// 投稿を削除
+// MARK: 投稿を削除
 app.delete("/:id", isAuthenticated, async (c) => {
   const userId = c.get("jwtPayload").sub;
   try {

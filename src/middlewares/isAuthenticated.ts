@@ -4,12 +4,16 @@ import { verify } from "hono/jwt";
 
 async function isAuthenticated(c: Context, next: Next) {
   try {
+    if (!(Bun.env.ACCESS_TOKEN_NAME && Bun.env.REFRESH_TOKEN_NAME)) {
+      throw new Error("JWT cookie name isn't defined");
+    }
+
     if (!Bun.env.JWT_SECRET) {
       throw new Error("JWT_SECRET_KEY is not set");
     }
 
-    const token = getCookie(c, "__Host-access_token");
-    const refreshToken = getCookie(c, "__Host-refresh_token");
+    const token = getCookie(c, Bun.env.ACCESS_TOKEN_NAME);
+    const refreshToken = getCookie(c, Bun.env.REFRESH_TOKEN_NAME);
 
     if (!token) {
       if (refreshToken) {

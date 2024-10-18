@@ -11,9 +11,13 @@ import isAuthenticated from "./middlewares/isAuthenticated";
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
+if (!(Bun.env.ACCESS_TOKEN_NAME && Bun.env.REFRESH_TOKEN_NAME)) {
+  throw new Error("JWT cookie name isn't defined");
+}
+
 // トークンのクッキー名
-const ACCESS_TOKEN: string = "__Host-access_token";
-const REFRESH_TOKEN: string = "__Host-refresh_token";
+const ACCESS_TOKEN: string = Bun.env.ACCESS_TOKEN_NAME;
+const REFRESH_TOKEN: string = Bun.env.REFRESH_TOKEN_NAME;
 
 // JWTの有効期限 (5分)
 const TOKEN_EXPIRY: number = 60 * 1;

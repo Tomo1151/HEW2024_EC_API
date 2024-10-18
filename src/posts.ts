@@ -17,7 +17,11 @@ const postCreateSchema = z.object({
 // MARK: すべての投稿を取得 (テスト用)
 app.get("/", async (c) => {
   try {
-    const posts = await prisma.post.findMany();
+    const posts = await prisma.post.findMany({
+      include: {
+        author: true,
+      },
+    });
     return c.json({ success: true, data: posts, length: posts.length }, 200);
   } catch {
     return c.json({ success: false, error: "Failed to fetch posts" }, 500);

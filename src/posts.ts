@@ -18,6 +18,10 @@ const postCreateSchema = z.object({
 app.get("/", async (c) => {
   try {
     const posts = await prisma.post.findMany({
+      orderBy: {
+        created_at: "desc",
+      },
+      take: 10,
       include: {
         author: true,
       },

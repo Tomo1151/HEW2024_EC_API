@@ -41,9 +41,9 @@ model Post {
   id            String       @id @unique @default(cuid())
   content       String
   live_link     String?
-  like_count    Int?
-  ref_count     Int?
-  comment_count Int?
+  like_count    Int          @default(0)
+  ref_count     Int          @default(0)
+  comment_count Int          @default(0)
   created_at    DateTime     @default(now())
   updated_at    DateTime     @default(now()) @updatedAt
   author        User         @relation(fields: [userId], references: [id])
@@ -84,6 +84,7 @@ model Repost {
   userId String
   postId String
 
+  @@unique([userId, postId])
   @@map("reposts")
 }
 
@@ -94,6 +95,7 @@ model Like {
   userId String
   postId String
 
+  @@unique([userId, postId])
   @@map("likes")
 }
 
@@ -114,6 +116,7 @@ model TaggedPost {
   tagId  String
   postId String
 
+  @@unique([tagId, postId])
   @@map("tagged_posts")
 }
 
@@ -171,6 +174,7 @@ model LicensedDownload {
   licenseId String
   userId    String
 
+  @@unique([licenseId, userId])
   @@map("licensed_downloads")
 }
 

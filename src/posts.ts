@@ -2,7 +2,10 @@ import { zValidator } from "@hono/zod-validator";
 import { PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
 import { z } from "zod";
+
 import isAuthenticated from "./middlewares/isAuthenticated";
+
+import { getUserIdFromCookie } from "./utils";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -16,11 +19,18 @@ const postCreateSchema = z.object({
 
 // MARK: すべての投稿を取得 (テスト用)
 app.get("/", async (c) => {
+  const userId: string = await getUserIdFromCookie(c);
+
   try {
     const posts = await prisma.post.findMany({
       take: 10,
       include: {
         author: true,
+        likes: {
+          where: {
+            userId,
+          },
+        },
       },
     });
     return c.json({ success: true, data: posts, length: posts.length }, 200);

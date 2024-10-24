@@ -7,6 +7,7 @@ import { getRouterName, showRoutes } from "hono/dev";
 import auth from "./auth";
 import users from "./users";
 import posts from "./posts";
+import likes from "./likes";
 
 const packageJson: { version: string } = require("../package.json");
 const API_VERSION: string = packageJson.version;
@@ -33,6 +34,7 @@ app.use(logger());
 app.route("/auth", auth);
 app.route("/users", users);
 app.route("/posts", posts);
+app.route("/", likes);
 
 app.get("/", (c) => {
   return c.text("Hello Hono! 🔥");

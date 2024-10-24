@@ -23,6 +23,17 @@ app.post("/posts/:postId/like", isAuthenticated, async (c) => {
       },
     });
 
+    await prisma.post.update({
+      where: {
+        id: postId,
+      },
+      data: {
+        like_count: {
+          increment: 1,
+        },
+      },
+    });
+
     return c.json({ success: true }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Failed to like the post" }, 400);
@@ -40,6 +51,17 @@ app.delete("/posts/:postId/like", isAuthenticated, async (c) => {
         userId_postId: {
           userId,
           postId,
+        },
+      },
+    });
+
+    await prisma.post.update({
+      where: {
+        id: postId,
+      },
+      data: {
+        like_count: {
+          decrement: 1,
         },
       },
     });

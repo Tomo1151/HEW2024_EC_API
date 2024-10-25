@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 // MARK: スキーマ定義
 
-// MARK: いいね
+// MARK: リポスト
 app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
   const postId: string = c.req.param("postId");
   const userId: string = c.get("jwtPayload").sub;
@@ -23,13 +23,24 @@ app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
       },
     });
 
+    await prisma.post.update({
+      where: {
+        id: postId,
+      },
+      data: {
+        ref_count: {
+          increment: 1,
+        },
+      },
+    });
+
     return c.json({ success: true }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Failed to repost the post" }, 400);
   }
 });
 
-// MARK: いいねをはずす
+// MARK: リポストを削除
 app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
   const postId: string = c.req.param("postId");
   const userId: string = c.get("jwtPayload").sub;
@@ -40,6 +51,17 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
         userId_postId: {
           userId,
           postId,
+        },
+      },
+    });
+
+    await prisma.post.update({
+      where: {
+        id: postId,
+      },
+      data: {
+        ref_count: {
+          decrement: 1,
         },
       },
     });

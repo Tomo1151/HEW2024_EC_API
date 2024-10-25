@@ -17,27 +17,63 @@ const postCreateSchema = z.object({
   content: z.string().min(1),
 });
 
-// MARK: すべての投稿を取得 (テスト用)
-app.get("/", async (c) => {
-  const userId: string = await getUserIdFromCookie(c);
+const getLatestPostsSchema = z.object({
+  tagName: z.string().optional(),
+  after: z.string(),
+});
 
-  try {
-    const posts = await prisma.post.findMany({
-      take: 10,
-      include: {
-        author: true,
-        likes: {
-          where: {
-            userId,
-          },
-        },
+// MARK: すべての投稿を取得 (テスト用)
+app.get(
+  "/",
+  zValidator("query", getLatestPostsSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: result.error }, 400);
+    }
+  }),
+  async (c) => {
+    const userId: string = await getUserIdFromCookie(c);
+    const { tagName, after }: { tagName?: string; after: string } =
+      c.req.valid("query");
+    console.log("Params", tagName, after);
+
+    const targetPost = await prisma.post.findUnique({
+      where: {
+        id: after,
+      },
+      select: {
+        created_at: true,
       },
     });
-    return c.json({ success: true, data: posts, length: posts.length }, 200);
-  } catch {
-    return c.json({ success: false, error: "Failed to fetch posts" }, 500);
+
+    try {
+      const query = {
+        take: 10,
+        include: {
+          author: true,
+          likes: {
+            where: {
+              userId,
+            },
+          },
+        },
+        where: {},
+      };
+
+      if (targetPost) {
+        query.where = { created_at: { gt: targetPost.created_at } };
+      }
+
+      console.dir(query);
+
+      const posts = await prisma.post.findMany({
+        ...query,
+      });
+      return c.json({ success: true, data: posts, length: posts.length }, 200);
+    } catch {
+      return c.json({ success: false, error: "Failed to fetch posts" }, 500);
+    }
   }
-});
+);
 
 // MARK: IDで指定された投稿を取得
 app.get("/:id", async (c) => {

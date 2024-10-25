@@ -41,10 +41,20 @@ app.get("/", async (c) => {
 
 // MARK: IDで指定された投稿を取得
 app.get("/:id", async (c) => {
+  const userId: string = await getUserIdFromCookie(c);
+
   try {
     const post = await prisma.post.findUnique({
       where: {
         id: c.req.param("id"),
+      },
+      include: {
+        author: true,
+        likes: {
+          where: {
+            userId,
+          },
+        },
       },
     });
     return c.json({ success: true, data: post }, 200);

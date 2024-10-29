@@ -34,7 +34,7 @@ app.get(
     const userId: string = await getUserIdFromCookie(c);
     const { tagName, after }: { tagName?: string; after: string } =
       c.req.valid("query");
-    console.log("Params", tagName, after);
+    // console.log("Params", tagName, after);
 
     const targetPost = await prisma.post.findUnique({
       where: {
@@ -57,18 +57,28 @@ app.get(
           },
         },
         where: {},
+        orderBy: {},
       };
 
       if (targetPost) {
         query.where = { created_at: { gt: targetPost.created_at } };
+      } else {
+        query.orderBy = { created_at: "desc" };
       }
 
-      console.dir(query);
+      // console.dir(query);
 
       const posts = await prisma.post.findMany({
         ...query,
       });
-      return c.json({ success: true, data: posts, length: posts.length }, 200);
+      return c.json(
+        {
+          success: true,
+          data: targetPost ? posts : posts.toReversed(),
+          length: posts.length,
+        },
+        200
+      );
     } catch {
       return c.json({ success: false, error: "Failed to fetch posts" }, 500);
     }

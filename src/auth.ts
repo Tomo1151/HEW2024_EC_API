@@ -20,8 +20,8 @@ const ACCESS_TOKEN: string = Bun.env.ACCESS_TOKEN_NAME;
 const REFRESH_TOKEN: string = Bun.env.REFRESH_TOKEN_NAME;
 
 // JWTの有効期限 (5分)
-const TOKEN_EXPIRY: number = 60 * 1;
-// const TOKEN_EXPIRY: number = 60 * 5;
+// const TOKEN_EXPIRY: number = 60 * 1;
+const TOKEN_EXPIRY: number = 60 * 5;
 
 // リフレッシュトークンの有効期限 (30日)
 const REFRESH_EXPIRY: number = 60 * 60 * 24 * 30;

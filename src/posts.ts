@@ -101,6 +101,11 @@ app.get("/:id", async (c) => {
       },
       include: {
         author: true,
+        reposts: {
+          where: {
+            userId,
+          },
+        },
         likes: {
           where: {
             userId,

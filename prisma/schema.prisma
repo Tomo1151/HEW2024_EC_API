@@ -31,6 +31,7 @@ model User {
   followees          Follow[]           @relation("Followee")
   reposts            Repost[]
   likes              Like[]
+  notifications      UserNotification[]
   licensed_downloads LicensedDownload[]
   refresh_token      RefreshToken?
 
@@ -186,4 +187,25 @@ model RefreshToken {
   userId     String   @unique
 
   @@map("refresh_tokens")
+}
+
+model Notification {
+  id         String   @id @unique @default(cuid())
+  content    String
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  user_notifications UserNotification[]
+
+  @@map("notifications")
+}
+
+model UserNotification {
+  id             String       @id @unique @default(cuid())
+  user           User         @relation(fields: [userId], references: [id])
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  userId         String
+  notificationId String
+
+  @@map("user_notifications")
 }

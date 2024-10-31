@@ -22,7 +22,7 @@ const getLatestPostsSchema = z.object({
   after: z.string(),
 });
 
-// MARK: すべての投稿を取得 (テスト用)
+// MARK: 最新の投稿を取得
 app.get(
   "/",
   zValidator("query", getLatestPostsSchema, (result, c) => {
@@ -50,6 +50,11 @@ app.get(
         take: 10,
         include: {
           author: true,
+          reposts: {
+            where: {
+              userId,
+            },
+          },
           likes: {
             where: {
               userId,

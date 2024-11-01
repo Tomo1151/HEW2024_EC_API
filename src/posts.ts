@@ -71,84 +71,84 @@ app.get(
         query.orderBy = { created_at: "desc" };
       }
 
-      async function getTimeline(userId?: string) {
-        const postParams = {
-          select: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                nickname: true,
-                icon_link: true,
-              },
+      // async function getTimeline(userId?: string) {
+      const postParams = {
+        select: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              nickname: true,
+              icon_link: true,
             },
-            comment_count: true,
-            content: true,
-            created_at: true,
-            id: true,
-            like_count: true,
-            likes: {
-              where: {
-                userId,
-              },
+          },
+          comment_count: true,
+          content: true,
+          created_at: true,
+          id: true,
+          like_count: true,
+          likes: {
+            where: {
+              userId,
             },
-            live_link: true,
-            postId: true,
-            ref_count: true,
-            reposts: {
-              where: {
-                userId,
-              },
+          },
+          live_link: true,
+          postId: true,
+          ref_count: true,
+          reposts: {
+            where: {
+              userId,
             },
-            updated_at: true,
-            userId: true,
           },
-        };
-        // postsを取得
-        const posts = await prisma.post.findMany({
-          ...postParams,
-          orderBy: {
-            created_at: "desc",
-          },
-          take: 10,
-        });
+          updated_at: true,
+          userId: true,
+        },
+      };
+      // postsを取得
+      const posts = await prisma.post.findMany({
+        ...postParams,
+        orderBy: {
+          created_at: "desc",
+        },
+        take: 10,
+      });
 
-        // repostsを取得し、関連するpostのcontentを取得
-        const reposts = await prisma.repost.findMany({
-          select: {
-            postId: true,
-            created_at: true,
-            userId: true,
-            post: postParams,
-          },
-          orderBy: {
-            created_at: "desc",
-          },
-          take: 10,
-        });
+      // repostsを取得し、関連するpostのcontentを取得
+      const reposts = await prisma.repost.findMany({
+        select: {
+          postId: true,
+          created_at: true,
+          userId: true,
+          post: postParams,
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+        take: 10,
+      });
 
-        // postsとrepostsを合体し、created_atで降順にソート
-        const timeline = [
-          ...posts.map((post) => ({ ...post, type: "post" })),
-          ...reposts.map((repost) => ({
-            ...repost.post,
-            type: "repost",
-          })),
-        ]
-          .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-          .slice(0, 10);
+      // postsとrepostsを合体し、created_atで降順にソート
+      const timeline = [
+        ...posts.map((post) => ({ ...post, type: "post" })),
+        ...reposts.map((repost) => ({
+          ...repost.post,
+          type: "repost",
+        })),
+      ]
+        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+        .slice(0, 10);
 
-        return timeline;
-      }
+      // return timeline;
+      // }
 
-      const latestPosts = await getTimeline(userId);
-      console.dir(latestPosts);
+      // const latestPosts = await getTimeline(userId);
+      // console.dir(latestPosts);
 
       return c.json(
         {
           success: true,
-          data: targetPost ? latestPosts : latestPosts.toReversed(),
-          length: latestPosts.length,
+          data: targetPost ? timeline : timeline.toReversed(),
+          length: timeline.length,
         },
         200
       );
@@ -157,17 +157,17 @@ app.get(
       //   await prisma.$queryRaw<Post>`SELECT id, content, created_at, 'post' AS 'type', userId FROM posts UNION ALL SELECT reposts.postId AS id, posts.content, reposts.created_at, 'repost' AS 'type', reposts.userId FROM reposts JOIN posts ON reposts.postId = posts.id ORDER BY created_at DESC LIMIT 10;`;
       // console.dir(q);
 
-      const posts = await prisma.post.findMany({
-        ...query,
-      });
-      return c.json(
-        {
-          success: true,
-          data: targetPost ? posts : posts.toReversed(),
-          length: posts.length,
-        },
-        200
-      );
+      // const posts = await prisma.post.findMany({
+      //   ...query,
+      // });
+      // return c.json(
+      //   {
+      //     success: true,
+      //     data: targetPost ? posts : posts.toReversed(),
+      //     length: posts.length,
+      //   },
+      //   200
+      // );
     } catch (e) {
       console.log(e);
       return c.json({ success: false, error: "Failed to fetch posts" }, 500);

@@ -48,19 +48,6 @@ app.get(
     try {
       const query = {
         take: 10,
-        include: {
-          author: true,
-          reposts: {
-            where: {
-              userId,
-            },
-          },
-          likes: {
-            where: {
-              userId,
-            },
-          },
-        },
         where: {},
         orderBy: {},
       };
@@ -107,10 +94,7 @@ app.get(
       // postsを取得
       const posts = await prisma.post.findMany({
         ...postParams,
-        orderBy: {
-          created_at: "desc",
-        },
-        take: 10,
+        ...query,
       });
 
       // repostsを取得し、関連するpostのcontentを取得
@@ -128,16 +112,25 @@ app.get(
           },
           post: postParams,
         },
-        orderBy: {
-          created_at: "desc",
-        },
-        take: 10,
+        ...query,
       });
 
       // postsとrepostsを合体し、created_atで降順にソート
       const timeline = [
         ...reposts.map((repost) => ({
-          ...repost.post,
+          id: repost.post.id,
+          content: repost.post.content,
+          live_link: repost.post.live_link,
+          like_count: repost.post.like_count,
+          ref_count: repost.post.ref_count,
+          comment_count: repost.post.comment_count,
+          created_at: repost.created_at,
+          updated_at: repost.post.updated_at,
+          userId: repost.post.userId,
+          postId: repost.postId,
+          author: repost.post.author,
+          reposts: repost.post.reposts,
+          likes: repost.post.likes,
           repost_user: repost.user,
           type: "repost",
         })),

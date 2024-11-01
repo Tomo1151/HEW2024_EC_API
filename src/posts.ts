@@ -138,7 +138,7 @@ app.get(
       const timeline = [
         ...reposts.map((repost) => ({
           ...repost.post,
-          repostUser: repost.user,
+          repost_user: repost.user,
           type: "repost",
         })),
         ...posts.map((post) => ({ ...post, type: "post" })),

@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { PrismaClient } from "@prisma/client";
+import { Post, PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -71,7 +71,91 @@ app.get(
         query.orderBy = { created_at: "desc" };
       }
 
-      // console.dir(query);
+      async function getTimeline(userId?: string) {
+        const postParams = {
+          select: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                nickname: true,
+                icon_link: true,
+              },
+            },
+            comment_count: true,
+            content: true,
+            created_at: true,
+            id: true,
+            like_count: true,
+            likes: {
+              where: {
+                userId,
+              },
+            },
+            live_link: true,
+            postId: true,
+            ref_count: true,
+            reposts: {
+              where: {
+                userId,
+              },
+            },
+            updated_at: true,
+            userId: true,
+          },
+        };
+        // postsを取得
+        const posts = await prisma.post.findMany({
+          ...postParams,
+          orderBy: {
+            created_at: "desc",
+          },
+          take: 10,
+        });
+
+        // repostsを取得し、関連するpostのcontentを取得
+        const reposts = await prisma.repost.findMany({
+          select: {
+            postId: true,
+            created_at: true,
+            userId: true,
+            post: postParams,
+          },
+          orderBy: {
+            created_at: "desc",
+          },
+          take: 10,
+        });
+
+        // postsとrepostsを合体し、created_atで降順にソート
+        const timeline = [
+          ...posts.map((post) => ({ ...post, type: "post" })),
+          ...reposts.map((repost) => ({
+            ...repost.post,
+            type: "repost",
+          })),
+        ]
+          .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+          .slice(0, 10);
+
+        return timeline;
+      }
+
+      const latestPosts = await getTimeline(userId);
+      console.dir(latestPosts);
+
+      return c.json(
+        {
+          success: true,
+          data: targetPost ? latestPosts : latestPosts.toReversed(),
+          length: latestPosts.length,
+        },
+        200
+      );
+
+      // const q =
+      //   await prisma.$queryRaw<Post>`SELECT id, content, created_at, 'post' AS 'type', userId FROM posts UNION ALL SELECT reposts.postId AS id, posts.content, reposts.created_at, 'repost' AS 'type', reposts.userId FROM reposts JOIN posts ON reposts.postId = posts.id ORDER BY created_at DESC LIMIT 10;`;
+      // console.dir(q);
 
       const posts = await prisma.post.findMany({
         ...query,
@@ -84,7 +168,8 @@ app.get(
         },
         200
       );
-    } catch {
+    } catch (e) {
+      console.log(e);
       return c.json({ success: false, error: "Failed to fetch posts" }, 500);
     }
   }

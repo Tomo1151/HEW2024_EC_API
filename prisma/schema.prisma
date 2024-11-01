@@ -79,11 +79,12 @@ model Product {
 }
 
 model Repost {
-  id     String @id @unique @default(cuid())
-  user   User   @relation(fields: [userId], references: [id])
-  post   Post   @relation("Repost", fields: [postId], references: [id])
-  userId String
-  postId String
+  id          String @id @unique @default(cuid())
+  user        User   @relation(fields: [userId], references: [id])
+  post        Post   @relation("Repost", fields: [postId], references: [id])
+  userId      String
+  postId      String
+  created_at  DateTime @default(now())
 
   @@unique([userId, postId])
   @@map("reposts")

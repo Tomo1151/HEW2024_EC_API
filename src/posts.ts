@@ -129,11 +129,11 @@ app.get(
 
       // postsとrepostsを合体し、created_atで降順にソート
       const timeline = [
-        ...posts.map((post) => ({ ...post, type: "post" })),
         ...reposts.map((repost) => ({
           ...repost.post,
           type: "repost",
         })),
+        ...posts.map((post) => ({ ...post, type: "post" })),
       ]
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .slice(0, 10);

@@ -118,7 +118,14 @@ app.get(
         select: {
           postId: true,
           created_at: true,
-          userId: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              nickname: true,
+              icon_link: true,
+            },
+          },
           post: postParams,
         },
         orderBy: {
@@ -131,6 +138,7 @@ app.get(
       const timeline = [
         ...reposts.map((repost) => ({
           ...repost.post,
+          repostUser: repost.user,
           type: "repost",
         })),
         ...posts.map((post) => ({ ...post, type: "post" })),

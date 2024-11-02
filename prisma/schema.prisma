@@ -47,7 +47,7 @@ model Post {
   comment_count Int          @default(0)
   created_at    DateTime     @default(now())
   updated_at    DateTime     @default(now()) @updatedAt
-  author        User         @relation(fields: [userId], references: [id])
+  author        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   product       Product?
   reply         Post[]       @relation("Reply")
   reposts       Repost[]     @relation("Repost")
@@ -70,7 +70,7 @@ model Product {
   release_date   DateTime   @default(now())
   created_at     DateTime   @default(now())
   updated_at     DateTime   @default(now()) @updatedAt
-  post           Post       @relation(fields: [postId], references: [id])
+  post           Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
   cart_items     CartItem[]
   postId         String     @unique
   Purchase       Purchase[]
@@ -79,12 +79,12 @@ model Product {
 }
 
 model Repost {
-  id          String @id @unique @default(cuid())
-  user        User   @relation(fields: [userId], references: [id])
-  post        Post   @relation("Repost", fields: [postId], references: [id])
-  userId      String
-  postId      String
-  created_at  DateTime @default(now())
+  id         String   @id @unique @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post       Post     @relation("Repost", fields: [postId], references: [id], onDelete: Cascade)
+  userId     String
+  postId     String
+  created_at DateTime @default(now())
 
   @@unique([userId, postId])
   @@map("reposts")
@@ -92,8 +92,8 @@ model Repost {
 
 model Like {
   id     String @id @unique @default(cuid())
-  user   User   @relation(fields: [userId], references: [id])
-  post   Post   @relation(fields: [postId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId String
   postId String
 
@@ -113,8 +113,8 @@ model Tag {
 
 model TaggedPost {
   id     String @id @unique @default(cuid())
-  tag    Tag    @relation(fields: [tagId], references: [id])
-  post   Post   @relation(fields: [postId], references: [id])
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   tagId  String
   postId String
 
@@ -127,8 +127,8 @@ model CartItem {
   amount     Int
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  user       User     @relation(fields: [userId], references: [id])
-  product    Product  @relation(fields: [productId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   userId     String
   productId  String
 
@@ -140,8 +140,8 @@ model Purchase {
   purchase_price Int
   created_at     DateTime @default(now())
   updated_at     DateTime @default(now()) @updatedAt
-  product        Product  @relation(fields: [productId], references: [id])
-  user           User     @relation(fields: [userId], references: [id])
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId      String
   userId         String
 
@@ -150,8 +150,8 @@ model Purchase {
 
 model Follow {
   id         String @id @unique @default(cuid())
-  follower   User   @relation("Follower", fields: [followerId], references: [id])
-  followee   User   @relation("Followee", fields: [followeeId], references: [id])
+  follower   User   @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee   User   @relation("Followee", fields: [followeeId], references: [id], onDelete: Cascade)
   followerId String
   followeeId String
 
@@ -171,8 +171,8 @@ model License {
 
 model LicensedDownload {
   id        String  @id @unique @default(cuid())
-  license   License @relation(fields: [licenseId], references: [id])
-  licensee  User    @relation(fields: [userId], references: [id])
+  license   License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  licensee  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   licenseId String
   userId    String
 
@@ -184,18 +184,18 @@ model RefreshToken {
   id         String   @id @unique @default(cuid())
   token      String   @unique
   updated_at DateTime @default(now()) @updatedAt
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String   @unique
 
   @@map("refresh_tokens")
 }
 
 model Notification {
-  id         String   @id @unique @default(cuid())
-  content    String
-  is_read    Boolean  @default(false)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @updatedAt
+  id                 String             @id @unique @default(cuid())
+  content            String
+  is_read            Boolean            @default(false)
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @default(now()) @updatedAt
   user_notifications UserNotification[]
 
   @@map("notifications")
@@ -203,8 +203,8 @@ model Notification {
 
 model UserNotification {
   id             String       @id @unique @default(cuid())
-  user           User         @relation(fields: [userId], references: [id])
-  notification   Notification @relation(fields: [notificationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
   userId         String
   notificationId String
 

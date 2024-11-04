@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"scripts": {
 		"dev": "bun run --hot src/index.ts",
-		"build": "bun build src/index.ts --target bun --compile --outfile app"
+		"build": "bun build src/index.ts --target bun --compile --outfile dist/app"
 	},
 	"dependencies": {
 		"@hono/zod-validator": "^0.2.2",

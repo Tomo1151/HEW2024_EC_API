@@ -1,18 +1,18 @@
 {
-	"name": "api",
-	"version": "0.1.0",
-	"scripts": {
-		"dev": "bun run --hot src/index.ts",
-		"build": "bun build src/index.ts --target bun --compile --outfile dist/app"
-	},
-	"dependencies": {
-		"@hono/zod-validator": "^0.2.2",
-		"@prisma/client": "^5.19.1",
-		"hono": "^4.5.11",
-		"prisma": "^5.19.1",
-		"zod": "^3.23.8"
-	},
-	"devDependencies": {
-		"@types/bun": "latest"
-	}
+  "name": "api",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build": "bun build src/index.ts --target bun --compile --outfile app"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.2.2",
+    "@prisma/client": "^5.19.1",
+    "hono": "^4.5.11",
+    "prisma": "^5.19.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
 }

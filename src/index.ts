@@ -1,3 +1,4 @@
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
@@ -53,4 +54,8 @@ app.get("/version", (c) => {
 showRoutes(app, { verbose: true });
 console.log(getRouterName(app), "\n");
 
-export default app;
+// export default app;
+serve({
+  fetch: app.fetch,
+  port: 3000,
+});

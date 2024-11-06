@@ -134,3 +134,5 @@ out
 
 # Prisma migration
 prisma/migrations/
+
+dist/

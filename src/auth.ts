@@ -5,19 +5,21 @@ import { zValidator } from "@hono/zod-validator";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 
+const bcrypt = require("bcrypt");
+
 import isAuthenticated from "./middlewares/isAuthenticated";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
-if (!(Bun.env.ACCESS_TOKEN_NAME && Bun.env.REFRESH_TOKEN_NAME)) {
+if (!(process.env.ACCESS_TOKEN_NAME && process.env.REFRESH_TOKEN_NAME)) {
   throw new Error("JWT cookie name isn't defined");
 }
 
 // トークンのクッキー名
-const ACCESS_TOKEN: string = Bun.env.ACCESS_TOKEN_NAME;
-const REFRESH_TOKEN: string = Bun.env.REFRESH_TOKEN_NAME;
+const ACCESS_TOKEN: string = process.env.ACCESS_TOKEN_NAME;
+const REFRESH_TOKEN: string = process.env.REFRESH_TOKEN_NAME;
 
 // JWTの有効期限 (5分)
 // const TOKEN_EXPIRY: number = 60 * 1;
@@ -74,10 +76,7 @@ app.post(
     }
 
     // パスワードの検証
-    const isPasswordValid = await Bun.password.verify(
-      password,
-      user.hashed_password
-    );
+    const isPasswordValid = bcrypt.compare(password, user.hashed_password);
 
     if (!isPasswordValid) {
       return c.json(
@@ -87,11 +86,11 @@ app.post(
     }
 
     // JWTの生成
-    if (!Bun.env.JWT_SECRET) {
+    if (!process.env.JWT_SECRET) {
       throw new Error("JWT secret is not set");
     }
 
-    if (!Bun.env.JWT_REFRESH) {
+    if (!process.env.JWT_REFRESH) {
       throw new Error("JWT refresh secret is not set");
     }
 
@@ -102,7 +101,7 @@ app.post(
     };
     const sessionToken = await sign(
       sessionPayload,
-      Bun.env.JWT_SECRET,
+      process.env.JWT_SECRET,
       "HS256"
     );
 
@@ -113,7 +112,7 @@ app.post(
     };
     const refreshToken = await sign(
       refreshPayload,
-      Bun.env.JWT_REFRESH,
+      process.env.JWT_REFRESH,
       "HS256"
     );
     try {
@@ -177,7 +176,7 @@ app.post(
   async (c) => {
     const { username, email, password } = c.req.valid("json");
 
-    const hashedPassword = await Bun.password.hash(password);
+    const hashedPassword = bcrypt.hash(password, 10);
 
     try {
       const user = await prisma.user.create({
@@ -208,17 +207,17 @@ app.post("/refresh", async (c) => {
     return c.json({ success: false, error: "No refresh token provided" }, 401);
   }
 
-  if (!Bun.env.JWT_SECRET) {
+  if (!process.env.JWT_SECRET) {
     throw new Error("JWT secret is not set");
   }
 
-  if (!Bun.env.JWT_REFRESH) {
+  if (!process.env.JWT_REFRESH) {
     throw new Error("JWT refresh secret is not set");
   }
 
   try {
     // JWTペイロードからユーザーIDを抽出
-    const { sub } = await verify(refreshToken, Bun.env.JWT_REFRESH);
+    const { sub } = await verify(refreshToken, process.env.JWT_REFRESH);
     if (!sub || typeof sub !== "string") {
       throw new Error("Invalid token");
     }
@@ -249,7 +248,7 @@ app.post("/refresh", async (c) => {
     };
     const sessionToken = await sign(
       sessionPayload,
-      Bun.env.JWT_SECRET,
+      process.env.JWT_SECRET,
       "HS256"
     );
 

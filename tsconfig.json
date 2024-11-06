@@ -3,6 +3,10 @@
     "strict": true,
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "typeRoots": ["node_modules/@types", "@types/*"]
+    "typeRoots": ["node_modules/@types", "@types/*"],
+    "target": "ES2023",
+    "moduleResolution": "node",
+    "module": "ESNext",
+    "outDir": "dist"
   }
 }

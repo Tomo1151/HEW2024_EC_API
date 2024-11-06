@@ -5,14 +5,15 @@ import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
 import { getRouterName, showRoutes } from "hono/dev";
 
-import auth from "./auth";
-import users from "./users";
-import posts from "./posts";
-import likes from "./likes";
-import reposts from "./reposts";
+import auth from "./auth.js";
+import users from "./users.js";
+import posts from "./posts.js";
+import likes from "./likes.js";
+import reposts from "./reposts.js";
 
-const packageJson: { version: string } = require("../package.json");
-const API_VERSION: string = packageJson.version;
+// const packageJson: { version: string } = require("../package.json");
+// const API_VERSION: string = packageJson.version;
+const API_VERSION: string = "1.0.0";
 
 const app: Hono = new Hono();
 

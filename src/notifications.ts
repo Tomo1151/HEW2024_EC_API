@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import isAuthenticated from "./middlewares/isAuthenticated";
+import isAuthenticated from "./middlewares/isAuthenticated.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();

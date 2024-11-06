@@ -5,9 +5,9 @@ import { zValidator } from "@hono/zod-validator";
 import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 
-const bcrypt = require("bcrypt");
+import * as bcrypt from "bcrypt";
 
-import isAuthenticated from "./middlewares/isAuthenticated";
+import isAuthenticated from "./middlewares/isAuthenticated.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -76,7 +76,10 @@ app.post(
     }
 
     // パスワードの検証
-    const isPasswordValid = bcrypt.compare(password, user.hashed_password);
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user.hashed_password
+    );
 
     if (!isPasswordValid) {
       return c.json(
@@ -176,7 +179,7 @@ app.post(
   async (c) => {
     const { username, email, password } = c.req.valid("json");
 
-    const hashedPassword = bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
       const user = await prisma.user.create({

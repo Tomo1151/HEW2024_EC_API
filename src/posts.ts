@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs";
+
 import { zValidator } from "@hono/zod-validator";
 import { Post, PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
@@ -11,10 +13,26 @@ import { getUserIdFromCookie } from "./utils.js";
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
+const IMAGE_SIZE_LIMIT = 1024 * 1024 * 5; // 5MB
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
 // MARK: スキーマ定義
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
+  image: z
+    .custom<FileList>()
+    .refine(
+      (files) =>
+        Array.from(files).every((file) => file.size < IMAGE_SIZE_LIMIT),
+      { message: "Image size must be less than 5MB" }
+    )
+    .refine(
+      (files) =>
+        Array.from(files).every((file) => IMAGE_TYPES.includes(file.type)),
+      { message: "Image must be jpeg, png, gif, or webp" }
+    )
+    .optional(),
 });
 
 const getLatestPostsSchema = z.object({
@@ -82,6 +100,7 @@ app.get(
           content: true,
           created_at: true,
           id: true,
+          image_link: true,
           like_count: true,
           likes: {
             where: {
@@ -130,6 +149,7 @@ app.get(
         ...reposts.map((repost) => ({
           id: repost.id,
           content: repost.post.content,
+          image_link: repost.post.image_link,
           live_link: repost.post.live_link,
           like_count: repost.post.like_count,
           ref_count: repost.post.ref_count,
@@ -219,14 +239,47 @@ app.get("/:id", async (c) => {
 app.post(
   "/",
   isAuthenticated,
-  zValidator("json", postCreateSchema, (result, c) => {
+  zValidator("form", postCreateSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: result.error, data: null }, 400);
     }
   }),
   async (c) => {
-    const { content }: { content: string } = c.req.valid("json");
+    const formData: {
+      content: string;
+      files?: File | string;
+    } = await c.req.parseBody();
     const userId = c.get("jwtPayload").sub;
+
+    const content: string = formData.content;
+    const files = formData.files;
+
+    if (files instanceof File) {
+      const fileData = await files.arrayBuffer();
+      const buffer = Buffer.from(fileData);
+      const fileName = `${userId}-${Date.now()}-${files.name}`;
+      const filePath = `./static/media/images/${fileName}`;
+      writeFile(filePath, buffer, (error) => {
+        if (error) {
+          console.error(error);
+          return c.json(
+            { success: false, error: "Failed to save image", data: null },
+            500
+          );
+        }
+      });
+
+      const post = await prisma.post.create({
+        data: {
+          content,
+          userId,
+          image_link: `/images/${fileName}`,
+        },
+      });
+
+      return c.json({ success: true, data: post }, 201);
+    }
+
     try {
       const post = await prisma.post.create({
         data: {
@@ -235,7 +288,8 @@ app.post(
         },
       });
       return c.json({ success: true, data: post }, 201);
-    } catch {
+    } catch (error) {
+      console.log(error);
       return c.json(
         { success: false, error: "Failed to create post", data: null },
         500

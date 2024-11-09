@@ -136,3 +136,4 @@ out
 prisma/migrations/
 
 dist/
+static/

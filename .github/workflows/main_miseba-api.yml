@@ -26,9 +26,7 @@ jobs:
           npm install
 
       - name: Apply all pending migrations to the database
-        run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: DATABASE_URL=${{ secrets.DATABASE_URL }} npx prisma migrate deploy
 
       - name: npm build and test
         run: |

@@ -58,5 +58,5 @@ jobs:
         with:
           app-name: 'Miseba-API'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_78057932A74A46A586573EFC29D8F8C3 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_11CE7C8F325449278DECCB0E5D1C2AD0 }}
           package: .

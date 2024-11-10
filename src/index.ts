@@ -30,7 +30,7 @@ app.use(
 
 app.use(
   csrf({
-    origin: ["http://localhost:3001"],
+    origin: ["http://localhost:3001", "https://miseba.azurewebsites.net"],
   })
 );
 

@@ -147,7 +147,7 @@ app.post(
       path: "/",
       httpOnly: true,
       secure: true,
-      sameSite: "Strict",
+      sameSite: "None",
       maxAge: TOKEN_EXPIRY,
     });
 
@@ -155,7 +155,7 @@ app.post(
       path: "/",
       httpOnly: true,
       secure: true,
-      sameSite: "Strict",
+      sameSite: "None",
       maxAge: REFRESH_EXPIRY,
     });
 
@@ -259,7 +259,7 @@ app.post("/refresh", async (c) => {
       path: "/",
       httpOnly: true,
       secure: true,
-      sameSite: "Strict",
+      sameSite: "None",
       maxAge: TOKEN_EXPIRY,
     });
 
@@ -279,13 +279,13 @@ app.post("/logout", async (c) => {
   deleteCookie(c, ACCESS_TOKEN, {
     path: "/",
     httpOnly: true,
-    sameSite: "Strict",
+    sameSite: "None",
     secure: true,
   });
   deleteCookie(c, REFRESH_TOKEN, {
     path: "/",
     httpOnly: true,
-    sameSite: "Strict",
+    sameSite: "None",
     secure: true,
   });
 

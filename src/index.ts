@@ -5,6 +5,7 @@ import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
 import { getRouterName, showRoutes } from "hono/dev";
 
+import statics from "./statics.js";
 import auth from "./auth.js";
 import users from "./users.js";
 import posts from "./posts.js";
@@ -34,6 +35,7 @@ app.use(
 );
 
 app.use(logger());
+app.route("/", statics);
 app.route("/auth", auth);
 app.route("/users", users);
 app.route("/posts", posts);

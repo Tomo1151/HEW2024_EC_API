@@ -43,6 +43,7 @@ model Post {
   id            String       @id @unique @default(cuid())
   content       String
   live_link     String?
+  image_link    String?
   like_count    Int          @default(0)
   ref_count     Int          @default(0)
   comment_count Int          @default(0)

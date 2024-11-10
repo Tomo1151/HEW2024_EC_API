@@ -21,7 +21,10 @@ const app: Hono = new Hono();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3001"],
+    origin: [
+      "http://localhost:3001",
+      "http://miseba-api-0-fpdacgbqedf8d2f9.japaneast-01.privatelink.azurewebsites.net/",
+    ],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 300,

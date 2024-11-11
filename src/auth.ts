@@ -161,8 +161,7 @@ app.post(
 
     // レスポンス用のユーザーデータを作成
     {
-      const { id, email, hashed_password, updated_at, ...returnUserData } =
-        user;
+      const { email, hashed_password, updated_at, ...returnUserData } = user;
       return c.json({ success: true, data: returnUserData }, 200);
     }
   }
@@ -263,10 +262,8 @@ app.post("/refresh", async (c) => {
       maxAge: TOKEN_EXPIRY,
     });
 
-    const { id, ...returnUserData } = user;
-
     return c.json(
-      { success: true, message: "Token refreshed", data: returnUserData },
+      { success: true, message: "Token refreshed", data: user },
       200
     );
   } catch (e) {

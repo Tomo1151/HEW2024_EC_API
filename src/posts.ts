@@ -135,7 +135,13 @@ app.get(
       });
 
       // repostsを取得し、関連するpostのcontentを取得
-      delete (query.where as { replied_ref?: string }).replied_ref;
+      if ("replied_ref" in query.where) {
+        delete query.where.replied_ref;
+      }
+      if ("AND" in query.where && targetPost) {
+        query.where = { created_at: { gt: targetPost.created_at } };
+      }
+
       const reposts = await prisma.repost.findMany({
         select: {
           id: true,

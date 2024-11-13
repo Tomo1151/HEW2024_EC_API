@@ -216,7 +216,14 @@ app.get("/:id", async (c) => {
         id: c.req.param("id"),
       },
       include: {
-        author: true,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+            icon_link: true,
+          },
+        },
         reposts: {
           where: {
             userId,
@@ -225,6 +232,30 @@ app.get("/:id", async (c) => {
         likes: {
           where: {
             userId,
+          },
+        },
+        reply: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                nickname: true,
+                icon_link: true,
+              },
+            },
+
+            likes: {
+              where: {
+                userId,
+              },
+            },
+
+            reposts: {
+              where: {
+                userId,
+              },
+            },
           },
         },
       },

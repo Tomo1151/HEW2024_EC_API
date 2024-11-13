@@ -8,6 +8,7 @@ import { z } from "zod";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 
 import { getUserIdFromCookie } from "./utils.js";
+import { equal } from "node:assert";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -80,8 +81,16 @@ app.get(
       };
 
       if (targetPost) {
-        query.where = { created_at: { gt: targetPost.created_at } };
+        query.where = {
+          AND: [
+            { replied_ref: null },
+            { created_at: { gt: targetPost.created_at } },
+          ],
+        };
       } else {
+        query.where = {
+          replied_ref: null,
+        };
         query.orderBy = { created_at: "desc" };
       }
 
@@ -108,8 +117,8 @@ app.get(
             },
           },
           live_link: true,
-          postId: true,
           ref_count: true,
+          replied_ref: true,
           reposts: {
             where: {
               userId,
@@ -126,6 +135,7 @@ app.get(
       });
 
       // repostsを取得し、関連するpostのcontentを取得
+      delete (query.where as { replied_ref?: string }).replied_ref;
       const reposts = await prisma.repost.findMany({
         select: {
           id: true,
@@ -234,7 +244,7 @@ app.get("/:id", async (c) => {
             userId,
           },
         },
-        reply: {
+        replies: {
           include: {
             author: {
               select: {
@@ -300,15 +310,23 @@ app.post(
         }
       });
 
-      const post = await prisma.post.create({
-        data: {
-          content,
-          userId,
-          image_link: `/images/${fileName}`,
-        },
-      });
+      try {
+        const post = await prisma.post.create({
+          data: {
+            content,
+            userId,
+            image_link: `/images/${fileName}`,
+          },
+        });
 
-      return c.json({ success: true, data: post }, 201);
+        return c.json({ success: true, data: post }, 201);
+      } catch (error) {
+        console.log(error);
+        return c.json(
+          { success: false, error: "Failed to create post", data: null },
+          500
+        );
+      }
     }
 
     try {
@@ -397,7 +415,8 @@ app.delete("/:id", isAuthenticated, async (c) => {
       },
     });
     return c.json({ success: true }, 200);
-  } catch {
+  } catch (e) {
+    console.log(e);
     return c.json({ success: false, error: "Failed to delete post" }, 400);
   }
 });

@@ -11,6 +11,7 @@ import users from "./users.js";
 import posts from "./posts.js";
 import likes from "./likes.js";
 import reposts from "./reposts.js";
+import replies from "./replies.js";
 
 // const packageJson: { version: string } = require("../package.json");
 // const API_VERSION: string = packageJson.version;
@@ -40,6 +41,7 @@ app.route("/auth", auth);
 app.route("/users", users);
 app.route("/posts", posts);
 app.route("/", reposts);
+app.route("/", replies);
 app.route("/", likes);
 
 app.get("/", (c) => {

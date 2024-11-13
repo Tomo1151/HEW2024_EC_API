@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -51,13 +51,13 @@ model Post {
   updated_at    DateTime     @default(now()) @updatedAt
   author        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   product       Product?
-  reply         Post[]       @relation("Reply")
   reposts       Repost[]     @relation("Repost")
+  replies       Post[]       @relation("Reply")
   likes         Like[]
   tags          TaggedPost[]
+  replied       Post?        @relation("Reply", fields: [repliedId], references: [id])
   userId        String
-  Post          Post?        @relation("Reply", fields: [postId], references: [id])
-  postId        String?
+  repliedId     String?
 
   @@map("posts")
 }

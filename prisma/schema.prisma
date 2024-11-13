@@ -55,7 +55,7 @@ model Post {
   replies       Post[]       @relation("Reply")
   likes         Like[]
   tags          TaggedPost[]
-  replied       Post?        @relation("Reply", fields: [repliedId], references: [id])
+  replied_ref   Post?        @relation("Reply", fields: [repliedId], references: [id])
   userId        String
   repliedId     String?
 

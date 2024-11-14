@@ -79,6 +79,16 @@ app.post(
             repliedId: postId,
           },
         });
+        await prisma.post.update({
+          where: {
+            id: postId,
+          },
+          data: {
+            comment_count: {
+              increment: 1,
+            },
+          },
+        });
         return c.json({ success: true, post }, 200);
       } catch (e) {
         return c.json(
@@ -96,7 +106,16 @@ app.post(
           repliedId: postId,
         },
       });
-
+      await prisma.post.update({
+        where: {
+          id: postId,
+        },
+        data: {
+          comment_count: {
+            increment: 1,
+          },
+        },
+      });
       return c.json({ success: true, post }, 200);
     } catch (e) {
       return c.json(

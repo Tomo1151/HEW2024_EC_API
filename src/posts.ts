@@ -227,7 +227,7 @@ app.get("/:id", async (c) => {
   const userId: string = await getUserIdFromCookie(c);
 
   try {
-    const post = await prisma.post.findUnique({
+    const post = await prisma.post.findUniqueOrThrow({
       where: {
         id: c.req.param("id"),
       },
@@ -278,7 +278,7 @@ app.get("/:id", async (c) => {
     });
     return c.json({ success: true, data: post }, 200);
   } catch {
-    return c.json({ success: false, error: "Failed to fetch post" }, 500);
+    return c.json({ success: false, error: "Failed to fetch post" }, 404);
   }
 });
 
@@ -415,11 +415,26 @@ app.delete("/:id", isAuthenticated, async (c) => {
         403
       );
     }
+
     await prisma.post.delete({
       where: {
         id: c.req.param("id"),
       },
     });
+
+    if (post.repliedId) {
+      await prisma.post.update({
+        where: {
+          id: post.repliedId,
+        },
+        data: {
+          comment_count: {
+            decrement: 1,
+          },
+        },
+      });
+    }
+
     return c.json({ success: true }, 200);
   } catch (e) {
     console.log(e);

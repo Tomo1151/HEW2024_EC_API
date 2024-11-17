@@ -12,6 +12,7 @@ import posts from "./posts.js";
 import likes from "./likes.js";
 import reposts from "./reposts.js";
 import replies from "./replies.js";
+import follows from "./follows.js";
 
 // const packageJson: { version: string } = require("../package.json");
 // const API_VERSION: string = packageJson.version;
@@ -43,6 +44,7 @@ app.route("/posts", posts);
 app.route("/", reposts);
 app.route("/", replies);
 app.route("/", likes);
+app.route("/follows", follows);
 
 app.get("/", (c) => {
   return c.text("Hello Hono! 🔥");

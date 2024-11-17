@@ -11,29 +11,30 @@ const prisma = new PrismaClient();
 // MARK: スキーマ定義
 
 // MARK: フォロワーリスト
+// not function
 app.get("/follows/:userId", async (c) => {
-    const param_userId: string = c.req.param("userId");
+  const param_userId: string = c.req.param("userId");
+
+  try {
+    const follower_list = 
+    await prisma.follow.findUnique({
+      where: {
+        id: param_userId,
+      },
+    });
+
+    return c.json({
+      
+      success: true,
+      data: {
+        user_id: param_userId,
+        followers: follower_list
+      }
   
-    try {
-      const follower_list = 
-      await prisma.follow.findUnique({
-        where: {
-          id: param_userId,
-        },
-      });
-  
-      return c.json({
-        
-        success: true,
-        data: {
-          user_id: param_userId,
-          followers: follower_list
-        }
-    
-    }, 200);
-    } catch (e) {
-      return c.json({ success: false, error: "User not found" }, 400);
-    }
-  });
+  }, 200);
+  } catch (e) {
+    return c.json({ success: false, error: "User not found" }, 400);
+  }
+});
 
 export default app;

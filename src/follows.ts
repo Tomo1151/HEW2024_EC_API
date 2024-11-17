@@ -12,14 +12,13 @@ const prisma = new PrismaClient();
 
 // MARK: フォロワーリスト
 app.get("/follows/:userId", async (c) => {
-    const postId: string = c.req.param("userId");
-    const userId: string = c.get("jwtPayload").sub;
+    const param_userId: string = c.req.param("userId");
   
     try {
       const follower_list = 
       await prisma.follow.findUnique({
         where: {
-          id: userId,
+          id: param_userId,
         },
       });
   
@@ -27,7 +26,7 @@ app.get("/follows/:userId", async (c) => {
         
         success: true,
         data: {
-          user_id: userId,
+          user_id: param_userId,
           followers: follower_list
         }
     

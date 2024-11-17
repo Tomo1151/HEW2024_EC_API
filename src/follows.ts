@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 // MARK: スキーマ定義
 
 // MARK: フォロワーリスト
-// not function
+// not working
 app.get("/follows/:userId", async (c) => {
   const param_userId: string = c.req.param("userId");
 

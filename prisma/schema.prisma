@@ -157,6 +157,7 @@ model Follow {
   followerId String
   followeeId String
 
+  @@unique([followerId, followeeId])
   @@map("follows")
 }
 

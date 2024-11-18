@@ -56,6 +56,47 @@ app.get("/:username/follows", async (c) => {
   }
 });
 
+app.get("/:username/followers", async (c) => {
+  const req_username: string = c.req.param("username");
+
+  try {
+    const userId = await prisma.user.findUniqueOrThrow({
+      where: {
+        username: req_username,
+      },
+      select: {
+        id: true,
+      }
+    });
+
+    const follower_list = 
+    await prisma.follow.findMany({
+      where: {
+        followeeId: userId.id,
+      },
+      select: {
+        followee: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+      }}}
+    });
+
+    return c.json({
+      
+      success: true,
+      data: {
+        user_id: req_username,
+        followers: follower_list
+      }
+  
+  }, 200);
+  } catch (e) {
+    return c.json({ success: false, error: "User not found" }, 401);
+  }
+});
+
 // MARK: フォローをつける
 app.post("/follows/", isAuthenticated,
   zValidator("json", followSchema, (result, c) => {

@@ -15,10 +15,21 @@ const followSchema = z.object({
 });
 
 // MARK: フォロワーリスト
+// User not foundのエラーをifかcatchにまとめほうが良さそう
 app.get("/follows/:userId", async (c) => {
   const req_userId: string = c.req.param("userId");
 
   try {
+    const found_user = await prisma.follow.findUnique({
+      where: {
+        id: req_userId  
+      }
+    });
+
+    if (!found_user) {
+      return c.json({ success: false, error: "User not found" }, 404);
+    }
+
     const follower_list = 
     await prisma.follow.findMany({
       where: {
@@ -43,7 +54,7 @@ app.get("/follows/:userId", async (c) => {
   
   }, 200);
   } catch (e) {
-    return c.json({ success: false, error: "User not found" }, 400);
+    return c.json({ success: false, error: "User not found" }, 404);
   }
 });
 

@@ -9,6 +9,10 @@ const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
 // MARK: スキーマ定義
+// フォローするのスキーマ
+const followSchema = z.object({
+  followed_user_id: z.string(),
+});
 
 // MARK: フォロワーリスト
 // not working
@@ -36,5 +40,29 @@ app.get("/follows/:userId", async (c) => {
     return c.json({ success: false, error: "User not found" }, 400);
   }
 });
+
+// MARK: フォローをつける
+app.post("/follows/", isAuthenticated,
+  zValidator("json", followSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, error: "Invalid Request data" }, 400);
+    }
+  }),
+  async (c) =>{
+  const { followed_user_id } = c.req.valid("json");
+  const userId: string = c.get("jwtPayload").sub;
+
+  try{
+    await prisma.follow.create({
+      data: {
+        followeeId: userId,
+        followerId: followed_user_id,
+      },
+    });
+    
+  } catch (e) {
+    return c.json({ success: false, error: "User not found" }, 401);
+  }
+})
 
 export default app;

@@ -55,8 +55,8 @@ app.post("/follows/", isAuthenticated,
   try{
     await prisma.follow.create({
       data: {
-        followeeId: userId,
-        followerId: followed_user_id,
+        followerId: userId,
+        followeeId: followed_user_id,
       },
     });
 
@@ -64,6 +64,6 @@ app.post("/follows/", isAuthenticated,
   } catch (e) {
     return c.json({ success: false, error: "Invalid Request data" }, 400);
   }
-})
+});
 
 export default app;

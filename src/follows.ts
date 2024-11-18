@@ -98,21 +98,29 @@ app.get("/:username/followers", async (c) => {
 });
 
 // MARK: フォローをつける
-app.post("/follows/", isAuthenticated,
-  zValidator("json", followSchema, (result, c) => {
-    if (!result.success) {
-      return c.json({ success: false, error: "Invalid Request data" }, 400);
-    }
-  }),
-  async (c) =>{
-  const { followed_user_id } = c.req.valid("json");
+app.post("/:username/follow/", isAuthenticated, async (c) =>{
+  const req_username: string = c.req.param("username");
   const userId: string = c.get("jwtPayload").sub;
 
   try{
+    const req_userId = await prisma.user.findUniqueOrThrow({
+      where: {
+        username: req_username,
+      },
+      select: {
+        id: true,
+      }
+    });
+
+    if (req_userId.id === userId) {
+      // エラーメッセージを変えてもいいかも
+      return c.json({ success: false, error: "Can't follow myself" }, 400);
+    }
+
     await prisma.follow.create({
       data: {
         followerId: userId,
-        followeeId: followed_user_id,
+        followeeId: req_userId.id,
       },
     });
 

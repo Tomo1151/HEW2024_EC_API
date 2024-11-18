@@ -59,9 +59,10 @@ app.post("/follows/", isAuthenticated,
         followerId: followed_user_id,
       },
     });
-    
+
+    return c.json({ success: true, error: "User followed successfully" }, 200);
   } catch (e) {
-    return c.json({ success: false, error: "User not found" }, 401);
+    return c.json({ success: false, error: "Invalid Request data" }, 400);
   }
 })
 

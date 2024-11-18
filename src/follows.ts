@@ -52,7 +52,7 @@ app.get("/:username/follows", async (c) => {
   
   }, 200);
   } catch (e) {
-    return c.json({ success: false, error: "User not found" }, 401);
+    return c.json({ success: false, error: "User not found" }, 404);
   }
 });
 
@@ -93,7 +93,7 @@ app.get("/:username/followers", async (c) => {
   
   }, 200);
   } catch (e) {
-    return c.json({ success: false, error: "User not found" }, 401);
+    return c.json({ success: false, error: "User not found" }, 404);
   }
 });
 

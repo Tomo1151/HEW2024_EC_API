@@ -131,21 +131,30 @@ app.post("/:username/follow/", isAuthenticated, async (c) =>{
 });
 
 // MARK: フォローをはずす
-app.delete("/follows/:req_userId", isAuthenticated, async (c) =>{
-  const req_userId: string = c.req.param("req_userId");
+app.delete("/:username/follow/", isAuthenticated, async (c) =>{
+  const req_username: string = c.req.param("username");
   const userId: string = c.get("jwtPayload").sub;
 
   try{
+    const req_userId = await prisma.user.findUniqueOrThrow({
+      where: {
+        username: req_username,
+      },
+      select: {
+        id: true,
+      }
+    });
+
     await prisma.follow.deleteMany({
       where: {
         followerId: userId,
-        followeeId: req_userId,
+        followeeId: req_userId.id,
       },
     });
 
     return c.json({ success: true, error: "User unfollowed successfully" }, 200);
   } catch (e) {
-    return c.json({ success: false, error: "Follow relationship not found" }, 404);
+    return c.json({ success: false, error: "User Not Found" }, 404);
   }
 });
 

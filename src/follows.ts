@@ -15,23 +15,29 @@ const followSchema = z.object({
 });
 
 // MARK: フォロワーリスト
-// not working
 app.get("/follows/:userId", async (c) => {
-  const param_userId: string = c.req.param("userId");
+  const req_userId: string = c.req.param("userId");
 
   try {
     const follower_list = 
-    await prisma.follow.findUnique({
+    await prisma.follow.findMany({
       where: {
-        id: param_userId,
+        followerId: req_userId,
       },
+      select: {
+        followee: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+      }}}
     });
 
     return c.json({
       
       success: true,
       data: {
-        user_id: param_userId,
+        user_id: req_userId,
         followers: follower_list
       }
   

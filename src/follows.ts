@@ -15,7 +15,7 @@ app.get("/:username/follows", async (c) => {
   const reqUsername: string = c.req.param("username");
 
   try {
-    const userId = await prisma.user.findUniqueOrThrow({
+    const user = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
       },
@@ -26,7 +26,7 @@ app.get("/:username/follows", async (c) => {
 
     const followerList = await prisma.follow.findMany({
       where: {
-        followerId: userId.id,
+        followerId: user.id,
       },
       select: {
         followee: {
@@ -59,7 +59,7 @@ app.get("/:username/followers", async (c) => {
   const reqUsername: string = c.req.param("username");
 
   try {
-    const userId = await prisma.user.findUniqueOrThrow({
+    const user = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
       },
@@ -70,7 +70,7 @@ app.get("/:username/followers", async (c) => {
 
     const followerList = await prisma.follow.findMany({
       where: {
-        followeeId: userId.id,
+        followeeId: user.id,
       },
       select: {
         followee: {
@@ -104,7 +104,7 @@ app.post("/:username/follow/", isAuthenticated, async (c) => {
   const userId: string = c.get("jwtPayload").sub;
 
   try {
-    const reqUserId = await prisma.user.findUniqueOrThrow({
+    const reqUser = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
       },
@@ -113,7 +113,7 @@ app.post("/:username/follow/", isAuthenticated, async (c) => {
       },
     });
 
-    if (reqUserId.id === userId) {
+    if (reqUser.id === userId) {
       // エラーメッセージを変えてもいいかも
       return c.json({ success: false, error: "Can't follow myself" }, 400);
     }
@@ -121,7 +121,7 @@ app.post("/:username/follow/", isAuthenticated, async (c) => {
     await prisma.follow.create({
       data: {
         followerId: userId,
-        followeeId: reqUserId.id,
+        followeeId: reqUser.id,
       },
     });
 
@@ -137,7 +137,7 @@ app.delete("/:username/follow/", isAuthenticated, async (c) => {
   const userId: string = c.get("jwtPayload").sub;
 
   try {
-    const reqUserId = await prisma.user.findUniqueOrThrow({
+    const reqUser = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
       },
@@ -146,10 +146,12 @@ app.delete("/:username/follow/", isAuthenticated, async (c) => {
       },
     });
 
-    await prisma.follow.deleteMany({
+    await prisma.follow.delete({
       where: {
-        followerId: userId,
-        followeeId: reqUserId.id,
+        followerId_followeeId: {
+          followerId: userId,
+          followeeId: reqUser.id,
+        },
       },
     });
 

@@ -83,9 +83,7 @@ app.get("/:username/followers", async (c) => {
     return c.json(
       {
         success: true,
-        data: {
-          user_id: followerList,
-        },
+        data: followerList,
       },
       200
     );

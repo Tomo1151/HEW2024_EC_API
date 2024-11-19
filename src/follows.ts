@@ -9,10 +9,6 @@ const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
 // MARK: スキーマ定義
-// フォローするのスキーマ
-const followSchema = z.object({
-  followed_user_id: z.string(),
-});
 
 // MARK: フォロワーリスト
 app.get("/:username/follows", async (c) => {

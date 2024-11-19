@@ -16,20 +16,19 @@ const followSchema = z.object({
 
 // MARK: フォロワーリスト
 app.get("/:username/follows", async (c) => {
-  const req_username: string = c.req.param("username");
+  const reqUsername: string = c.req.param("username");
 
   try {
     const userId = await prisma.user.findUniqueOrThrow({
       where: {
-        username: req_username,
+        username: reqUsername,
       },
       select: {
         id: true,
-      }
+      },
     });
 
-    const follower_list = 
-    await prisma.follow.findMany({
+    const followerList = await prisma.follow.findMany({
       where: {
         followerId: userId.id,
       },
@@ -39,38 +38,41 @@ app.get("/:username/follows", async (c) => {
             id: true,
             username: true,
             nickname: true,
-      }}}
+          },
+        },
+      },
     });
 
-    return c.json({
-      
-      success: true,
-      data: {
-        user_id: req_username,
-        followers: follower_list
-      }
-  
-  }, 200);
+    return c.json(
+      {
+        success: true,
+        data: {
+          user_id: reqUsername,
+          followers: followerList,
+        },
+      },
+      200
+    );
   } catch (e) {
     return c.json({ success: false, error: "User not found" }, 404);
   }
 });
 
+// MARK: フォロー中リスト
 app.get("/:username/followers", async (c) => {
-  const req_username: string = c.req.param("username");
+  const reqUsername: string = c.req.param("username");
 
   try {
     const userId = await prisma.user.findUniqueOrThrow({
       where: {
-        username: req_username,
+        username: reqUsername,
       },
       select: {
         id: true,
-      }
+      },
     });
 
-    const follower_list = 
-    await prisma.follow.findMany({
+    const followerList = await prisma.follow.findMany({
       where: {
         followeeId: userId.id,
       },
@@ -80,39 +82,42 @@ app.get("/:username/followers", async (c) => {
             id: true,
             username: true,
             nickname: true,
-      }}}
+          },
+        },
+      },
     });
 
-    return c.json({
-      
-      success: true,
-      data: {
-        user_id: req_username,
-        followers: follower_list
-      }
-  
-  }, 200);
+    return c.json(
+      {
+        success: true,
+        data: {
+          user_id: reqUsername,
+          followers: followerList,
+        },
+      },
+      200
+    );
   } catch (e) {
     return c.json({ success: false, error: "User not found" }, 404);
   }
 });
 
 // MARK: フォローをつける
-app.post("/:username/follow/", isAuthenticated, async (c) =>{
-  const req_username: string = c.req.param("username");
+app.post("/:username/follow/", isAuthenticated, async (c) => {
+  const reqUsername: string = c.req.param("username");
   const userId: string = c.get("jwtPayload").sub;
 
-  try{
-    const req_userId = await prisma.user.findUniqueOrThrow({
+  try {
+    const reqUserId = await prisma.user.findUniqueOrThrow({
       where: {
-        username: req_username,
+        username: reqUsername,
       },
       select: {
         id: true,
-      }
+      },
     });
 
-    if (req_userId.id === userId) {
+    if (reqUserId.id === userId) {
       // エラーメッセージを変えてもいいかも
       return c.json({ success: false, error: "Can't follow myself" }, 400);
     }
@@ -120,7 +125,7 @@ app.post("/:username/follow/", isAuthenticated, async (c) =>{
     await prisma.follow.create({
       data: {
         followerId: userId,
-        followeeId: req_userId.id,
+        followeeId: reqUserId.id,
       },
     });
 
@@ -131,28 +136,31 @@ app.post("/:username/follow/", isAuthenticated, async (c) =>{
 });
 
 // MARK: フォローをはずす
-app.delete("/:username/follow/", isAuthenticated, async (c) =>{
-  const req_username: string = c.req.param("username");
+app.delete("/:username/follow/", isAuthenticated, async (c) => {
+  const reqUsername: string = c.req.param("username");
   const userId: string = c.get("jwtPayload").sub;
 
-  try{
-    const req_userId = await prisma.user.findUniqueOrThrow({
+  try {
+    const reqUserId = await prisma.user.findUniqueOrThrow({
       where: {
-        username: req_username,
+        username: reqUsername,
       },
       select: {
         id: true,
-      }
+      },
     });
 
     await prisma.follow.deleteMany({
       where: {
         followerId: userId,
-        followeeId: req_userId.id,
+        followeeId: reqUserId.id,
       },
     });
 
-    return c.json({ success: true, error: "User unfollowed successfully" }, 200);
+    return c.json(
+      { success: true, error: "User unfollowed successfully" },
+      200
+    );
   } catch (e) {
     return c.json({ success: false, error: "User Not Found" }, 404);
   }

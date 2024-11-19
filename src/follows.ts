@@ -42,10 +42,7 @@ app.get("/:username/follows", async (c) => {
     return c.json(
       {
         success: true,
-        data: {
-          user_id: reqUsername,
-          followers: followerList,
-        },
+        data: followerList,
       },
       200
     );
@@ -87,8 +84,7 @@ app.get("/:username/followers", async (c) => {
       {
         success: true,
         data: {
-          user_id: reqUsername,
-          followers: followerList,
+          user_id: followerList,
         },
       },
       200

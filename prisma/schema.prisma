@@ -28,8 +28,8 @@ model User {
   posts              Post[]
   cart_items         CartItem[]
   purchases          Purchase[]
-  followers          Follow[]           @relation("Follower")
-  followees          Follow[]           @relation("Followee")
+  followers          Follow[]           @relation("asFollowee")
+  followees          Follow[]           @relation("asFollower")
   reposts            Repost[]
   likes              Like[]
   notifications      UserNotification[]
@@ -152,11 +152,12 @@ model Purchase {
 
 model Follow {
   id         String @id @unique @default(cuid())
-  follower   User   @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
-  followee   User   @relation("Followee", fields: [followeeId], references: [id], onDelete: Cascade)
+  follower   User   @relation("asFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee   User   @relation("asFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
   followerId String
   followeeId String
 
+  @@unique([followerId, followeeId])
   @@map("follows")
 }
 

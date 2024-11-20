@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
+import { getUserIdFromCookie } from "./utils.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -113,39 +114,63 @@ app.put(
 app.get("/:username/posts", async (c) => {
   let posts;
   try {
-    const username = c.req.param("username");
+    const username: string = c.req.param("username");
+    const userId: string = await getUserIdFromCookie(c);
+
     posts = await prisma.post.findMany({
-      where: { author: { username } },
-      select: {
-        id: true,
-        content: true,
-        like_count: true,
-        comment_count: true,
+      where: { AND: [{ author: { username } }, { replied_ref: null }] },
+      orderBy: {
+        created_at: "desc",
+      },
+      include: {
         author: {
           select: {
+            id: true,
             username: true,
             nickname: true,
             icon_link: true,
           },
         },
-        tags: {
-          select: {
-            tag: true,
+        reposts: {
+          where: {
+            userId,
           },
         },
-        product: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            thumbnail_link: true,
+        likes: {
+          where: {
+            userId,
           },
         },
-        created_at: true,
+        replies: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                nickname: true,
+                icon_link: true,
+              },
+            },
+
+            likes: {
+              where: {
+                userId,
+              },
+            },
+
+            reposts: {
+              where: {
+                userId,
+              },
+            },
+          },
+        },
       },
     });
+    console.log(posts);
   } catch (e) {
-    return c.json({ success: false, error: "User not found" }, 404);
+    console.log(e);
+    return c.json({ success: false, error: "User not found", data: [] }, 404);
   }
   return c.json({ success: true, data: posts, length: posts.length }, 200);
 });

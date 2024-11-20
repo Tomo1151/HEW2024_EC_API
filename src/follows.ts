@@ -65,7 +65,7 @@ app.get("/:username/followers", async (c) => {
       },
     });
 
-    const followerList = await prisma.follow.findMany({
+    const followeeList = await prisma.follow.findMany({
       where: {
         followeeId: user.id,
       },
@@ -83,7 +83,7 @@ app.get("/:username/followers", async (c) => {
     return c.json(
       {
         success: true,
-        data: followerList,
+        data: followeeList,
       },
       200
     );

@@ -70,7 +70,7 @@ app.get("/:username/followers", async (c) => {
         followeeId: user.id,
       },
       select: {
-        followee: {
+        follower: {
           select: {
             id: true,
             username: true,

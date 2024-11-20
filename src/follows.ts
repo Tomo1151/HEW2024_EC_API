@@ -126,7 +126,7 @@ app.post("/:username/follow/", isAuthenticated, async (c) => {
 });
 
 // MARK: フォローをはずす
-app.delete("/:username/follow/", isAuthenticated, async (c) => {
+app.delete("/:username/follow", isAuthenticated, async (c) => {
   const reqUsername: string = c.req.param("username");
   const userId: string = c.get("jwtPayload").sub;
 

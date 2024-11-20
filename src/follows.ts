@@ -97,7 +97,7 @@ app.get("/:username/followers", async (c) => {
 });
 
 // MARK: フォローをつける
-app.post("/:username/follow/", isAuthenticated, async (c) => {
+app.post("/:username/follow", isAuthenticated, async (c) => {
   const reqUsername: string = c.req.param("username");
   const userId: string = c.get("jwtPayload").sub;
 

@@ -15,6 +15,7 @@ app.get("/:username/follows", async (c) => {
   const reqUsername: string = c.req.param("username");
 
   try {
+    // userテーブルからidを取得
     const user = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
@@ -24,6 +25,7 @@ app.get("/:username/follows", async (c) => {
       },
     });
 
+    // idからフォロワーリストを取得
     const followerList = await prisma.follow.findMany({
       where: {
         followerId: user.id,
@@ -56,6 +58,7 @@ app.get("/:username/followers", async (c) => {
   const reqUsername: string = c.req.param("username");
 
   try {
+    // userテーブルからidを取得
     const user = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
@@ -65,6 +68,7 @@ app.get("/:username/followers", async (c) => {
       },
     });
 
+    // idからフォロー中リストを取得
     const followeeList = await prisma.follow.findMany({
       where: {
         followeeId: user.id,
@@ -98,6 +102,7 @@ app.post("/:username/follow/", isAuthenticated, async (c) => {
   const userId: string = c.get("jwtPayload").sub;
 
   try {
+    // userテーブルからidを取得
     const reqUser = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
@@ -107,11 +112,12 @@ app.post("/:username/follow/", isAuthenticated, async (c) => {
       },
     });
 
+    // 自分自身をフォローしようとした際の例外処理
     if (reqUser.id === userId) {
-      // エラーメッセージを変えてもいいかも
       return c.json({ success: false, error: "Can't follow myself" }, 400);
     }
 
+    // フォローテーブルにデータを追加
     await prisma.follow.create({
       data: {
         followerId: userId,
@@ -131,6 +137,7 @@ app.delete("/:username/follow", isAuthenticated, async (c) => {
   const userId: string = c.get("jwtPayload").sub;
 
   try {
+    // userテーブルからidを取得
     const reqUser = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
@@ -140,6 +147,7 @@ app.delete("/:username/follow", isAuthenticated, async (c) => {
       },
     });
 
+    // フォローテーブルから削除
     await prisma.follow.delete({
       where: {
         followerId_followeeId: {

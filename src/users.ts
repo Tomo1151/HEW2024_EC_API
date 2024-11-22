@@ -13,7 +13,7 @@ const prisma = new PrismaClient();
 // ユーザーの編集PUTのスキーマ
 const userUpdateSchema = z
   .object({
-    nickname: z.string().min(1).max(50),
+    nickname: z.string().max(50),
     bio: z.string().max(160),
     homepage_link: z.string().max(255),
     icon_link: z.string().max(255),
@@ -167,7 +167,6 @@ app.get("/:username/posts", async (c) => {
         },
       },
     });
-    console.log(posts);
   } catch (e) {
     console.log(e);
     return c.json({ success: false, error: "User not found", data: [] }, 404);

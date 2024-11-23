@@ -43,6 +43,8 @@ app.get("/", async (c) => {
 
 // MARK: usernameでユーザーを取得
 app.get("/:username", async (c) => {
+  const userId: string = await getUserIdFromCookie(c);
+
   let user;
   try {
     const username = c.req.param("username");
@@ -55,6 +57,21 @@ app.get("/:username", async (c) => {
         homepage_link: true,
         icon_link: true,
         created_at: true,
+        followers: {
+          where: {
+            followerId: userId,
+          },
+          select: {
+            followerId: true,
+          },
+        },
+        _count: {
+          select: {
+            posts: true,
+            followers: true,
+            followees: true,
+          },
+        },
       },
     });
   } catch (e) {

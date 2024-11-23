@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
+import { getUserIdFromCookie } from "./utils.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -13,29 +14,42 @@ const prisma = new PrismaClient();
 // MARK: フォロワーリスト
 app.get("/:username/follows", async (c) => {
   const reqUsername: string = c.req.param("username");
+  const userId: string = await getUserIdFromCookie(c);
 
   try {
-    // userテーブルからidを取得
-    const user = await prisma.user.findUniqueOrThrow({
+    // userテーブルからフォロー中のユーザーのidを取得
+    const followIds = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
       },
       select: {
-        id: true,
+        followees: {
+          select: {
+            followeeId: true,
+          },
+        },
       },
     });
 
-    // idからフォロワーリストを取得
-    const followerList = await prisma.follow.findMany({
+    // idからフォロー中のユーザーを取得
+    const follows = await prisma.user.findMany({
       where: {
-        followerId: user.id,
+        id: {
+          in: followIds.followees.map((follow) => follow.followeeId),
+        },
       },
       select: {
-        followee: {
+        id: true,
+        username: true,
+        nickname: true,
+        bio: true,
+        icon_link: true,
+        followers: {
+          where: {
+            followerId: userId,
+          },
           select: {
-            id: true,
-            username: true,
-            nickname: true,
+            followerId: true,
           },
         },
       },
@@ -44,7 +58,7 @@ app.get("/:username/follows", async (c) => {
     return c.json(
       {
         success: true,
-        data: followerList,
+        data: follows,
       },
       200
     );
@@ -53,32 +67,45 @@ app.get("/:username/follows", async (c) => {
   }
 });
 
-// MARK: フォロー中リスト
+// MARK: フォロワーリスト
 app.get("/:username/followers", async (c) => {
   const reqUsername: string = c.req.param("username");
+  const userId: string = await getUserIdFromCookie(c);
 
   try {
     // userテーブルからidを取得
-    const user = await prisma.user.findUniqueOrThrow({
+    const followerIds = await prisma.user.findUniqueOrThrow({
       where: {
         username: reqUsername,
       },
       select: {
-        id: true,
+        followers: {
+          select: {
+            followerId: true,
+          },
+        },
       },
     });
 
-    // idからフォロー中リストを取得
-    const followeeList = await prisma.follow.findMany({
+    // idからフォロワーリストを取得
+    const followers = await prisma.user.findMany({
       where: {
-        followeeId: user.id,
+        id: {
+          in: followerIds.followers.map((follow) => follow.followerId),
+        },
       },
       select: {
-        follower: {
+        id: true,
+        username: true,
+        nickname: true,
+        bio: true,
+        icon_link: true,
+        followers: {
+          where: {
+            followerId: userId,
+          },
           select: {
-            id: true,
-            username: true,
-            nickname: true,
+            followerId: true,
           },
         },
       },
@@ -87,7 +114,7 @@ app.get("/:username/followers", async (c) => {
     return c.json(
       {
         success: true,
-        data: followeeList,
+        data: followers,
       },
       200
     );

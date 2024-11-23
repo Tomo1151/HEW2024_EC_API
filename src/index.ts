@@ -44,7 +44,7 @@ app.route("/posts", posts);
 app.route("/", reposts);
 app.route("/", replies);
 app.route("/", likes);
-app.route("/", follows);
+app.route("/users", follows);
 
 app.get("/", (c) => {
   return c.text("Hello Hono! 🔥");

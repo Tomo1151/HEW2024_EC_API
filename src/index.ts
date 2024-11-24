@@ -23,7 +23,11 @@ const app: Hono = new Hono();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3001", "https://miseba.azurewebsites.net"],
+    origin: [
+      "http://localhost:3001",
+      "https://miseba.azurewebsites.net",
+      "https://miseba.syntck.com",
+    ],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     maxAge: 300,
@@ -32,7 +36,11 @@ app.use(
 
 app.use(
   csrf({
-    origin: ["http://localhost:3001", "https://miseba.azurewebsites.net"],
+    origin: [
+      "http://localhost:3001",
+      "https://miseba.azurewebsites.net",
+      "https://miseba.syntck.com",
+    ],
   })
 );
 

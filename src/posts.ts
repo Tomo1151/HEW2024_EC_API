@@ -314,20 +314,6 @@ app.post(
         );
       }
 
-      // const fileData = await files.arrayBuffer();
-      // const buffer = Buffer.from(fileData);
-      // const fileName = `${userId}-${Date.now()}-${files.name}`;
-      // const filePath = `./static/media/images/${fileName}`;
-      // writeFile(filePath, buffer, (error) => {
-      //   if (error) {
-      //     console.error(error);
-      //     return c.json(
-      //       { success: false, error: "Failed to save image", data: null },
-      //       500
-      //     );
-      //   }
-      // });
-
       try {
         const post = await prisma.post.create({
           data: {

@@ -7,7 +7,7 @@ import { z } from "zod";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 
-import { getUserIdFromCookie } from "./utils.js";
+import { getUserIdFromCookie, uploadBlobData } from "./utils.js";
 import { equal } from "node:assert";
 
 // MARK: 定数宣言
@@ -302,26 +302,38 @@ app.post(
     const files = formData.files;
 
     if (files instanceof File) {
-      const fileData = await files.arrayBuffer();
-      const buffer = Buffer.from(fileData);
-      const fileName = `${userId}-${Date.now()}-${files.name}`;
-      const filePath = `./static/media/images/${fileName}`;
-      writeFile(filePath, buffer, (error) => {
-        if (error) {
-          console.error(error);
-          return c.json(
-            { success: false, error: "Failed to save image", data: null },
-            500
-          );
-        }
+      const blobName: string | void = await uploadBlobData({
+        targetContainer: "post",
+        file: files,
       });
+
+      if (!blobName) {
+        return c.json(
+          { success: false, error: "Failed to save image", data: null },
+          500
+        );
+      }
+
+      // const fileData = await files.arrayBuffer();
+      // const buffer = Buffer.from(fileData);
+      // const fileName = `${userId}-${Date.now()}-${files.name}`;
+      // const filePath = `./static/media/images/${fileName}`;
+      // writeFile(filePath, buffer, (error) => {
+      //   if (error) {
+      //     console.error(error);
+      //     return c.json(
+      //       { success: false, error: "Failed to save image", data: null },
+      //       500
+      //     );
+      //   }
+      // });
 
       try {
         const post = await prisma.post.create({
           data: {
             content,
             userId,
-            image_link: `/images/${fileName}`,
+            image_link: blobName,
           },
         });
 

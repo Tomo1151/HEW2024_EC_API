@@ -8,7 +8,7 @@ import { z } from "zod";
 import * as bcrypt from "bcrypt";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
-
+// console.log(process.env.ACCESS_TOKEN_NAME, process.env.REFRESH_TOKEN_NAME);
 // MARK: 定数宣言
 const app: Hono = new Hono();
 const prisma = new PrismaClient();

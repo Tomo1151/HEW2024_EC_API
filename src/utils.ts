@@ -15,8 +15,6 @@ import {
 
 import { BlobContainerName } from "../@types";
 
-console.log(process.env);
-
 // MARK: 定数
 if (
   !process.env.ACCOUNT_NAME ||
@@ -24,13 +22,6 @@ if (
   !process.env.USER_ICON_CONTAINER_NAME ||
   !process.env.POST_IMAGE_CONTAINER_NAME
 ) {
-  // console.log(
-  //   process.env,
-  //   process.env.ACCOUNT_NAME,
-  //   process.env.ACCOUNT_KEY,
-  //   process.env.USER_ICON_CONTAINER_NAME,
-  //   process.env.POST_IMAGE_CONTAINER_NAME
-  // );
   console.error("環境変数が設定されていません");
   process.exit(1);
 }

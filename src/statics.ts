@@ -19,10 +19,6 @@ app.get(
 
 // return Blob file from Azure Blob Storage
 app.get("/media/images/:blobName", async (c) => {
-  // console.log(process.env);
-  // if (!(process.env.ACCESS_TOKEN_NAME && process.env.REFRESH_TOKEN_NAME)) {
-  //   throw new Error("JWT cookie name isn't defined");
-  // }
   const blobName: string = c.req.param("blobName");
   const blob = await downloadBlobByName({
     targetContainer: "icon",
@@ -35,7 +31,7 @@ app.get("/media/images/:blobName", async (c) => {
 
   const contentType = "image/png"; // 必要に応じてファイルタイプを変更
   c.header("Content-Type", contentType);
-  c.header("Content-Disposition", `attachment; filename="${blobName}"`);
+  c.header("Content-Disposition", `inline`);
   return c.body(blob);
 });
 

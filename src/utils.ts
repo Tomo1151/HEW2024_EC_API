@@ -59,6 +59,49 @@ export async function getUserIdFromCookie(c: Context): Promise<string> {
   }
 }
 
+export async function deleteBlobByName({
+  targetContainer,
+  blobName,
+}: {
+  targetContainer: BlobContainerName;
+  blobName: string;
+}): Promise<boolean> {
+  try {
+    // StorageSharedKeyCredentialを作成
+    const sharedKeyCredential: StorageSharedKeyCredential =
+      new StorageSharedKeyCredential(ACCOUNT_NAME, ACCOUNT_KEY);
+
+    //   BlobServiceClientを作成
+    const blobServiceClient: BlobServiceClient = new BlobServiceClient(
+      `https://${ACCOUNT_NAME}.blob.core.windows.net`,
+      sharedKeyCredential
+    );
+
+    // コンテナクライアントを取得
+    const containerClient: ContainerClient =
+      blobServiceClient.getContainerClient(CONTAINER_NAME[targetContainer]);
+
+    // Blob名を指定
+    const blockBlobClient: BlockBlobClient =
+      containerClient.getBlockBlobClient(blobName);
+
+    //blobを削除
+    const deleteBlockBlobResponse = await blockBlobClient.delete({
+      deleteSnapshots: "include",
+    });
+
+    console.log(
+      `Delete block blob ${blobName} successfully`,
+      deleteBlockBlobResponse.requestId
+    );
+
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
 export async function uploadBlobData({
   targetContainer,
   file,

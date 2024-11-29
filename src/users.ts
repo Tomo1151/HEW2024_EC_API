@@ -3,7 +3,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
-import { getUserIdFromCookie, uploadBlobData } from "./utils.js";
+import {
+  deleteBlobByName,
+  getUserIdFromCookie,
+  uploadBlobData,
+} from "./utils.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -118,7 +122,7 @@ app.put(
       // リクエストユーザーが編集しようとしているユーザーか確認
       const reqUser = await prisma.user.findUniqueOrThrow({
         where: { id: userId },
-        select: { username: true },
+        select: { username: true, icon_link: true },
       });
 
       if (reqUser.username !== username) {
@@ -137,6 +141,13 @@ app.put(
         icon_link = await uploadBlobData({
           targetContainer: "icon",
           file: icon,
+        });
+      }
+
+      if (reqUser.icon_link) {
+        await deleteBlobByName({
+          targetContainer: "icon",
+          blobName: reqUser.icon_link,
         });
       }
 

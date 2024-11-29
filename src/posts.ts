@@ -302,7 +302,7 @@ app.post(
     const files = formData.files;
 
     if (files instanceof File) {
-      const blobName: string | void = await uploadBlobData({
+      const blobName: string | null = await uploadBlobData({
         targetContainer: "post",
         file: files,
       });

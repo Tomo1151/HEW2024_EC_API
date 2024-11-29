@@ -5,6 +5,8 @@ import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
 import { getRouterName, showRoutes } from "hono/dev";
 
+import { trimTrailingSlash } from "hono/trailing-slash";
+
 import statics from "./statics.js";
 import auth from "./auth.js";
 import users from "./users.js";
@@ -43,6 +45,8 @@ app.use(
     ],
   })
 );
+
+app.use(trimTrailingSlash());
 
 app.use(logger());
 app.route("/", statics);

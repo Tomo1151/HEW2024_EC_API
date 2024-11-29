@@ -65,7 +65,7 @@ export async function uploadBlobData({
 }: {
   targetContainer: BlobContainerName;
   file: File;
-}): Promise<string | void> {
+}): Promise<string | null> {
   const fileData: ArrayBuffer = await file.arrayBuffer();
 
   try {
@@ -100,6 +100,7 @@ export async function uploadBlobData({
     return blobName;
   } catch (error) {
     console.error(error);
+    return null;
   }
 }
 

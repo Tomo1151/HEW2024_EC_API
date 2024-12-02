@@ -188,6 +188,11 @@ app.get("/:username/posts", async (c) => {
             icon_link: true,
           },
         },
+        images: {
+          select: {
+            image_link: true,
+          },
+        },
         reposts: {
           where: {
             userId,

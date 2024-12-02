@@ -43,13 +43,13 @@ model Post {
   id            String       @id @unique @default(cuid())
   content       String
   live_link     String?
-  image_link    String?
   like_count    Int          @default(0)
   ref_count     Int          @default(0)
   comment_count Int          @default(0)
   created_at    DateTime     @default(now())
   updated_at    DateTime     @default(now()) @updatedAt
   author        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images        PostImage[]
   product       Product?
   reposts       Repost[]     @relation("Repost")
   replies       Post[]       @relation("Reply")
@@ -60,6 +60,15 @@ model Post {
   repliedId     String?
 
   @@map("posts")
+}
+
+model PostImage {
+  id         String   @id @unique @default(cuid())
+  image_link String   @unique
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId     String
+
+  @@map("post_images")
 }
 
 model Product {

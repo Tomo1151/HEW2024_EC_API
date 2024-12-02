@@ -9,13 +9,20 @@ import isAuthenticated from "./middlewares/isAuthenticated.js";
 
 import { getUserIdFromCookie, uploadBlobData } from "./utils.js";
 import { equal } from "node:assert";
+import { IMAGE_MIME_TYPE } from "../@types/index.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
-const IMAGE_SIZE_LIMIT = 1024 * 1024 * 5; // 5MB
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const IMAGE_SIZE_LIMIT: number = 1024 * 1024 * 5; // 5MB
+const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+const MAX_IMAGE_COUNT: number = 4;
 
 // MARK: スキーマ定義
 // 投稿作成POSTのスキーマ
@@ -23,6 +30,9 @@ const postCreateSchema = z.object({
   content: z.string().min(1),
   image: z
     .custom<FileList>()
+    .refine((files) => files.length <= MAX_IMAGE_COUNT, {
+      message: `You can only upload up to ${MAX_IMAGE_COUNT} images`,
+    })
     .refine(
       (files) =>
         Array.from(files).every((file) => file.size < IMAGE_SIZE_LIMIT),
@@ -30,7 +40,9 @@ const postCreateSchema = z.object({
     )
     .refine(
       (files) =>
-        Array.from(files).every((file) => IMAGE_TYPES.includes(file.type)),
+        Array.from(files).every((file) =>
+          IMAGE_TYPES.includes(file.type as IMAGE_MIME_TYPE)
+        ),
       { message: "Image must be jpeg, png, gif, or webp" }
     )
     .optional(),
@@ -109,7 +121,6 @@ app.get(
           content: true,
           created_at: true,
           id: true,
-          image_link: true,
           like_count: true,
           likes: {
             where: {
@@ -117,6 +128,11 @@ app.get(
             },
           },
           live_link: true,
+          images: {
+            select: {
+              image_link: true,
+            },
+          },
           ref_count: true,
           replied_ref: true,
           reposts: {
@@ -165,7 +181,7 @@ app.get(
         ...reposts.map((repost) => ({
           id: repost.id,
           content: repost.post.content,
-          image_link: repost.post.image_link,
+          image: repost.post.images,
           live_link: repost.post.live_link,
           like_count: repost.post.like_count,
           ref_count: repost.post.ref_count,
@@ -240,6 +256,11 @@ app.get("/:id", async (c) => {
             icon_link: true,
           },
         },
+        images: {
+          select: {
+            image_link: true,
+          },
+        },
         reposts: {
           where: {
             userId,
@@ -294,32 +315,60 @@ app.post(
   async (c) => {
     const formData: {
       content: string;
-      files?: File | string;
-    } = await c.req.parseBody();
+      files: (string | File)[] | (string | File);
+    } = await c.req.parseBody({
+      all: true,
+    });
     const userId = c.get("jwtPayload").sub;
 
     const content: string = formData.content;
     const files = formData.files;
 
-    if (files instanceof File) {
-      const blobName: string | null = await uploadBlobData({
-        targetContainer: "post",
-        file: files,
-      });
-
-      if (!blobName) {
-        return c.json(
-          { success: false, error: "Failed to save image", data: null },
-          500
-        );
-      }
-
+    // 画像が複数枚の場合
+    if (files instanceof Array) {
       try {
-        const post = await prisma.post.create({
+        const { id } = await prisma.post.create({
           data: {
             content,
             userId,
-            image_link: blobName,
+          },
+        });
+
+        for (const file of files) {
+          if (!(file instanceof File)) continue;
+          const blobName: string | null = await uploadBlobData({
+            targetContainer: "post",
+            file,
+          });
+
+          if (!blobName) {
+            return c.json(
+              { success: false, error: "Failed to save image", data: null },
+              500
+            );
+          }
+
+          try {
+            await prisma.postImage.create({
+              data: {
+                postId: id,
+                image_link: blobName,
+              },
+            });
+          } catch (error) {
+            console.log(error);
+            return c.json(
+              { success: false, error: "Failed to create post", data: null },
+              500
+            );
+          }
+        }
+        const post = await prisma.post.findUnique({
+          where: {
+            id,
+          },
+          include: {
+            images: true,
           },
         });
 
@@ -333,6 +382,56 @@ app.post(
       }
     }
 
+    // 画像が1枚の場合
+    if (files instanceof File) {
+      console.log("File");
+      const blobName: string | null = await uploadBlobData({
+        targetContainer: "post",
+        file: files,
+      });
+
+      if (!blobName) {
+        return c.json(
+          { success: false, error: "Failed to save image", data: null },
+          500
+        );
+      }
+
+      try {
+        const { id } = await prisma.post.create({
+          data: {
+            content,
+            userId,
+          },
+        });
+
+        await prisma.postImage.create({
+          data: {
+            postId: id,
+            image_link: blobName,
+          },
+        });
+
+        const post = await prisma.post.findUnique({
+          where: {
+            id,
+          },
+          include: {
+            images: true,
+          },
+        });
+
+        return c.json({ success: true, data: post }, 201);
+      } catch (error) {
+        console.log(error);
+        return c.json(
+          { success: false, error: "Failed to create post", data: null },
+          500
+        );
+      }
+    }
+
+    // 画像がない場合
     try {
       const post = await prisma.post.create({
         data: {

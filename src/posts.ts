@@ -43,7 +43,7 @@ const postCreateSchema = z.object({
         return Array.from(files).length <= MAX_IMAGE_COUNT;
       },
       {
-        message: `You can only upload up to ${MAX_IMAGE_COUNT} images`,
+        message: `一度にアップロードできる画像は${MAX_IMAGE_COUNT}枚までです`,
       }
     )
     .refine(
@@ -56,7 +56,7 @@ const postCreateSchema = z.object({
           return file.size < IMAGE_SIZE_LIMIT;
         });
       },
-      { message: "Image size must be less than 5MB" }
+      { message: "画像ファイルのサイズは5MiBまでです" }
     )
     .refine(
       (files) => {
@@ -67,7 +67,7 @@ const postCreateSchema = z.object({
           IMAGE_TYPES.includes(file.type as IMAGE_MIME_TYPE)
         );
       },
-      { message: "Image must be jpeg, png, gif, or webp" }
+      { message: "画像ファイルの形式はJPEG/PNG/GIF/WEBPでなければなりません" }
     )
     .optional(),
 });
@@ -225,12 +225,6 @@ app.get(
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .slice(0, 10);
 
-      // return timeline;
-      // }
-
-      // const latestPosts = await getTimeline(userId);
-      // console.dir(latestPosts);
-
       return c.json(
         {
           success: true,
@@ -239,22 +233,6 @@ app.get(
         },
         200
       );
-
-      // const q =
-      //   await prisma.$queryRaw<Post>`SELECT id, content, created_at, 'post' AS 'type', userId FROM posts UNION ALL SELECT reposts.postId AS id, posts.content, reposts.created_at, 'repost' AS 'type', reposts.userId FROM reposts JOIN posts ON reposts.postId = posts.id ORDER BY created_at DESC LIMIT 10;`;
-      // console.dir(q);
-
-      // const posts = await prisma.post.findMany({
-      //   ...query,
-      // });
-      // return c.json(
-      //   {
-      //     success: true,
-      //     data: targetPost ? posts : posts.toReversed(),
-      //     length: posts.length,
-      //   },
-      //   200
-      // );
     } catch (e) {
       console.log(e);
       return c.json({ success: false, error: "Failed to fetch posts" }, 500);
@@ -335,7 +313,14 @@ app.post(
     // console.log(postCreateSchema);
     console.log(result);
     if (!result.success) {
-      return c.json({ success: false, error: result.error, data: null }, 400);
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((issue) => issue.message),
+          data: null,
+        },
+        400
+      );
     }
   }),
   async (c) => {

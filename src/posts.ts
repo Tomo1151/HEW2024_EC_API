@@ -1,7 +1,7 @@
-import { Hono } from "hono";
-import { PrismaClient } from "@prisma/client";
-import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { PrismaClient } from "@prisma/client";
+import { Hono } from "hono";
+import { z } from "zod";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 

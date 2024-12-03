@@ -22,24 +22,51 @@ const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
 const MAX_IMAGE_COUNT: number = 4;
 
 // MARK: スキーマ定義
+const imageFileSchema = z
+  .custom<File>()
+  .refine((file) => file.size < IMAGE_SIZE_LIMIT, {
+    message: "Image size must be less than 5MB",
+  })
+  .refine((file) => IMAGE_TYPES.includes(file.type as IMAGE_MIME_TYPE), {
+    message: "Image must be jpeg, png, gif, or webp",
+  });
+
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
-  image: z
-    .custom<FileList>()
-    .refine((files) => files.length <= MAX_IMAGE_COUNT, {
-      message: `You can only upload up to ${MAX_IMAGE_COUNT} images`,
-    })
+  files: z
+    .custom<File | FileList>()
     .refine(
-      (files) =>
-        Array.from(files).every((file) => file.size < IMAGE_SIZE_LIMIT),
+      (files) => {
+        if (files instanceof File) return true;
+        console.log("File length: ", Array.from(files).length);
+        return Array.from(files).length <= MAX_IMAGE_COUNT;
+      },
+      {
+        message: `You can only upload up to ${MAX_IMAGE_COUNT} images`,
+      }
+    )
+    .refine(
+      (files) => {
+        if (files instanceof File) {
+          return files.size < IMAGE_SIZE_LIMIT;
+        }
+        return Array.from(files).every((file) => {
+          console.log("File size: ", file.size);
+          return file.size < IMAGE_SIZE_LIMIT;
+        });
+      },
       { message: "Image size must be less than 5MB" }
     )
     .refine(
-      (files) =>
-        Array.from(files).every((file) =>
+      (files) => {
+        if (files instanceof File) {
+          return IMAGE_TYPES.includes(files.type as IMAGE_MIME_TYPE);
+        }
+        return Array.from(files).every((file) =>
           IMAGE_TYPES.includes(file.type as IMAGE_MIME_TYPE)
-        ),
+        );
+      },
       { message: "Image must be jpeg, png, gif, or webp" }
     )
     .optional(),
@@ -305,6 +332,8 @@ app.post(
   "/",
   isAuthenticated,
   zValidator("form", postCreateSchema, (result, c) => {
+    // console.log(postCreateSchema);
+    console.log(result);
     if (!result.success) {
       return c.json({ success: false, error: result.error, data: null }, 400);
     }

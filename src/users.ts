@@ -3,7 +3,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
-import { getUserIdFromCookie } from "./utils.js";
+import {
+  deleteBlobByName,
+  getUserIdFromCookie,
+  uploadBlobData,
+} from "./utils.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -16,7 +20,19 @@ const userUpdateSchema = z
     nickname: z.string().max(50),
     bio: z.string().max(160),
     homepage_link: z.string().max(255),
-    icon_link: z.string().max(255),
+    icon: z
+      .custom<File>()
+      .refine((file) => file.size < 1024 * 1024 * 5, {
+        message: "Icon size must be less than 5MB",
+      })
+      .refine(
+        (file) =>
+          ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
+            file.type
+          ),
+        { message: "Icon must be jpeg, png, gif, or webp" }
+      )
+      .optional(),
   })
   .partial()
   .strict();
@@ -84,20 +100,29 @@ app.get("/:username", async (c) => {
 app.put(
   "/:username",
   isAuthenticated,
-  zValidator("json", userUpdateSchema, (result, c) => {
+  zValidator("form", userUpdateSchema, (result, c) => {
     if (!result.success) {
-      return c.json({ success: false, error: result.error }, 400);
+      return c.json({ success: false, error: result.error, data: null }, 400);
     }
   }),
   async (c) => {
     const userId = c.get("jwtPayload").sub;
+    const formData: {
+      nickname: string;
+      bio: string;
+      homepage_link: string;
+      icon: File;
+    } = await c.req.parseBody();
+
     const username = c.req.param("username");
-    const { nickname, bio, homepage_link, icon_link } = c.req.valid("json");
+    const { nickname, bio, homepage_link, icon } = c.req.valid("form");
+    console.log({ nickname, bio, homepage_link, icon });
+
     try {
       // リクエストユーザーが編集しようとしているユーザーか確認
       const reqUser = await prisma.user.findUniqueOrThrow({
         where: { id: userId },
-        select: { username: true },
+        select: { username: true, icon_link: true },
       });
 
       if (reqUser.username !== username) {
@@ -109,6 +134,21 @@ app.put(
           },
           403
         );
+      }
+
+      let icon_link: string | null = null;
+      if (icon) {
+        icon_link = await uploadBlobData({
+          targetContainer: "icon",
+          file: icon,
+        });
+      }
+
+      if (reqUser.icon_link) {
+        await deleteBlobByName({
+          targetContainer: "icon",
+          blobName: reqUser.icon_link,
+        });
       }
 
       await prisma.user.update({
@@ -146,6 +186,11 @@ app.get("/:username/posts", async (c) => {
             username: true,
             nickname: true,
             icon_link: true,
+          },
+        },
+        images: {
+          select: {
+            image_link: true,
           },
         },
         reposts: {

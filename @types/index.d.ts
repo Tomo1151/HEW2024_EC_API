@@ -4,3 +4,9 @@ export type jsonResponse = {
 };
 
 export type BlobContainerName = "icon" | "post";
+export type IMAGE_MIME_TYPE =
+  | "image/jpeg"
+  | "image/png"
+  | "image/gif"
+  | "image/webp"
+  | "image/svg+xml";

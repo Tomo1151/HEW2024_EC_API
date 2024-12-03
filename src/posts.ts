@@ -205,7 +205,7 @@ app.get(
         ...reposts.map((repost) => ({
           id: repost.id,
           content: repost.post.content,
-          image: repost.post.images,
+          images: repost.post.images,
           live_link: repost.post.live_link,
           like_count: repost.post.like_count,
           ref_count: repost.post.ref_count,

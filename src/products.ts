@@ -44,9 +44,14 @@ const productCreateSchema = z.object({
     .refine((file) => file.size < 1024 * 1024 * 1024 * 5, {
       message: "Data size must be less than 5GB",
     })
-    .refine((file) => file.type === "application/zip", {
-      message: "Data must be a zip file",
-    })
+    .refine(
+      (file) =>
+        file.type === "application/zip" ||
+        file.type === "application/x-zip-compressed",
+      {
+        message: "Data must be a zip file",
+      }
+    )
     .optional(),
   images: z
     .custom<File | FileList>()
@@ -149,7 +154,10 @@ app.post(
   zValidator("form", productCreateSchema, (result, c) => {
     if (!result.success) {
       return c.json(
-        { success: false, error: "Failed to create the product" },
+        {
+          success: false,
+          error: result.error.issues.map((issue) => issue.message),
+        },
         500
       );
     }

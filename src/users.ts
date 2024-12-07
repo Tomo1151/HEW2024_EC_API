@@ -188,6 +188,14 @@ app.get("/:username/posts", async (c) => {
             icon_link: true,
           },
         },
+        product: {
+          select: {
+            name: true,
+            price: true,
+            thumbnail_link: true,
+            live_release: true,
+          },
+        },
         images: {
           select: {
             image_link: true,

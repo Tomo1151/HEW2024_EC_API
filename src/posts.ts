@@ -22,15 +22,6 @@ const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
 const MAX_IMAGE_COUNT: number = 4;
 
 // MARK: スキーマ定義
-const imageFileSchema = z
-  .custom<File>()
-  .refine((file) => file.size < IMAGE_SIZE_LIMIT, {
-    message: "Image size must be less than 5MB",
-  })
-  .refine((file) => IMAGE_TYPES.includes(file.type as IMAGE_MIME_TYPE), {
-    message: "Image must be jpeg, png, gif, or webp",
-  });
-
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
@@ -152,6 +143,14 @@ app.get(
             },
           },
           live_link: true,
+          product: {
+            select: {
+              name: true,
+              price: true,
+              thumbnail_link: true,
+              live_release: true,
+            },
+          },
           images: {
             select: {
               image_link: true,
@@ -206,6 +205,7 @@ app.get(
           id: repost.id,
           content: repost.post.content,
           images: repost.post.images,
+          product: repost.post.product,
           live_link: repost.post.live_link,
           like_count: repost.post.like_count,
           ref_count: repost.post.ref_count,
@@ -256,6 +256,14 @@ app.get("/:id", async (c) => {
             username: true,
             nickname: true,
             icon_link: true,
+          },
+        },
+        product: {
+          select: {
+            name: true,
+            price: true,
+            thumbnail_link: true,
+            live_release: true,
           },
         },
         images: {

@@ -1,7 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
-import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 
 // MARK: 定数宣言
@@ -62,7 +60,7 @@ app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
   };
 
   try {
-    const repost = await prisma.repost.create({
+    await prisma.repost.create({
       data: {
         userId,
         postId,
@@ -81,7 +79,7 @@ app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
       ...postParams,
     });
 
-    return c.json({ success: true, data: { ref, repost } }, 200);
+    return c.json({ success: true, data: { ref } }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Failed to repost the post" }, 400);
   }
@@ -139,7 +137,7 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
   };
 
   try {
-    const repost = await prisma.repost.delete({
+    await prisma.repost.delete({
       where: {
         userId_postId: {
           userId,
@@ -160,7 +158,7 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
       ...postParams,
     });
 
-    return c.json({ success: true, data: { ref, repost } }, 200);
+    return c.json({ success: true, data: { ref } }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Failed to delete repost" }, 400);
   }

@@ -22,15 +22,6 @@ const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
 const MAX_IMAGE_COUNT: number = 4;
 
 // MARK: スキーマ定義
-const imageFileSchema = z
-  .custom<File>()
-  .refine((file) => file.size < IMAGE_SIZE_LIMIT, {
-    message: "Image size must be less than 5MB",
-  })
-  .refine((file) => IMAGE_TYPES.includes(file.type as IMAGE_MIME_TYPE), {
-    message: "Image must be jpeg, png, gif, or webp",
-  });
-
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
@@ -77,24 +68,40 @@ const getLatestPostsSchema = z.object({
   after: z.string(),
 });
 
+const getOldPostsSchema = z.object({
+  tagName: z.string().optional(),
+  before: z.string(),
+});
+
+const geTimelinePostsSchema = getLatestPostsSchema.or(getOldPostsSchema);
+
 // MARK: 最新の投稿を取得
 app.get(
   "/",
-  zValidator("query", getLatestPostsSchema, (result, c) => {
+  zValidator("query", geTimelinePostsSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, error: result.error }, 400);
     }
   }),
   async (c) => {
     const userId: string = await getUserIdFromCookie(c);
-    const { tagName, after }: { tagName?: string; after: string } =
+    const {
+      tagName,
+      after,
+      before,
+    }: { tagName?: string; after?: string; before?: string } =
       c.req.valid("query");
-    // console.log("Params", tagName, after);
+
+    console.log("Params", tagName, after, before);
+    console.log("after", after);
+    console.log("before", before);
+
+    const targetId = before ? before : after;
 
     const targetPost =
       (await prisma.post.findUnique({
         where: {
-          id: after,
+          id: targetId,
         },
         select: {
           created_at: true,
@@ -102,7 +109,7 @@ app.get(
       })) ||
       (await prisma.repost.findUnique({
         where: {
-          id: after,
+          id: targetId,
         },
         select: {
           created_at: true,
@@ -120,9 +127,15 @@ app.get(
         query.where = {
           AND: [
             { replied_ref: null },
-            { created_at: { gt: targetPost.created_at } },
+            {
+              created_at: before
+                ? { lt: targetPost.created_at }
+                : { gt: targetPost.created_at },
+            },
           ],
         };
+
+        if (before) query.orderBy = { created_at: "desc" };
       } else {
         query.where = {
           replied_ref: null,
@@ -152,6 +165,15 @@ app.get(
             },
           },
           live_link: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              thumbnail_link: true,
+              live_release: true,
+            },
+          },
           images: {
             select: {
               image_link: true,
@@ -179,7 +201,11 @@ app.get(
         delete query.where.replied_ref;
       }
       if ("AND" in query.where && targetPost) {
-        query.where = { created_at: { gt: targetPost.created_at } };
+        query.where = {
+          created_at: before
+            ? { lt: targetPost.created_at }
+            : { gt: targetPost.created_at },
+        };
       }
 
       const reposts = await prisma.repost.findMany({
@@ -206,6 +232,7 @@ app.get(
           id: repost.id,
           content: repost.post.content,
           images: repost.post.images,
+          product: repost.post.product,
           live_link: repost.post.live_link,
           like_count: repost.post.like_count,
           ref_count: repost.post.ref_count,
@@ -228,7 +255,11 @@ app.get(
       return c.json(
         {
           success: true,
-          data: targetPost ? timeline : timeline.toReversed(),
+          data: targetPost
+            ? before
+              ? timeline.toReversed()
+              : timeline
+            : timeline.toReversed(),
           length: timeline.length,
         },
         200
@@ -256,6 +287,15 @@ app.get("/:id", async (c) => {
             username: true,
             nickname: true,
             icon_link: true,
+          },
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            thumbnail_link: true,
+            live_release: true,
           },
         },
         images: {
@@ -311,7 +351,7 @@ app.post(
   isAuthenticated,
   zValidator("form", postCreateSchema, (result, c) => {
     // console.log(postCreateSchema);
-    console.log(result);
+    // console.log(result);
     if (!result.success) {
       return c.json(
         {

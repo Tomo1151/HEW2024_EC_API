@@ -20,7 +20,8 @@ if (
   !process.env.ACCOUNT_NAME ||
   !process.env.ACCOUNT_KEY ||
   !process.env.USER_ICON_CONTAINER_NAME ||
-  !process.env.POST_IMAGE_CONTAINER_NAME
+  !process.env.POST_IMAGE_CONTAINER_NAME ||
+  !process.env.PRODUCT_DATA_CONTAINER_NAME
 ) {
   console.error("環境変数が設定されていません");
   process.exit(1);
@@ -30,9 +31,13 @@ const ACCOUNT_NAME: string = process.env.ACCOUNT_NAME;
 const ACCOUNT_KEY: string = process.env.ACCOUNT_KEY;
 const USER_ICON_CONTAINER_NAME: string = process.env.USER_ICON_CONTAINER_NAME;
 const POST_IMAGE_CONTAINER_NAME: string = process.env.POST_IMAGE_CONTAINER_NAME;
-const CONTAINER_NAME: { icon: string; post: string } = {
+const PRODUCT_DATA_CONTAINER_NAME: string =
+  process.env.PRODUCT_DATA_CONTAINER_NAME;
+
+const CONTAINER_NAME: { icon: string; post: string; product: string } = {
   icon: USER_ICON_CONTAINER_NAME,
   post: POST_IMAGE_CONTAINER_NAME,
+  product: PRODUCT_DATA_CONTAINER_NAME,
 };
 
 export async function getUserIdFromCookie(c: Context): Promise<string> {
@@ -64,8 +69,10 @@ export async function deleteBlobByName({
   blobName,
 }: {
   targetContainer: BlobContainerName;
-  blobName: string;
+  blobName: string | null;
 }): Promise<boolean> {
+  if (!blobName) return true;
+
   try {
     // StorageSharedKeyCredentialを作成
     const sharedKeyCredential: StorageSharedKeyCredential =
@@ -108,43 +115,39 @@ export async function uploadBlobData({
 }: {
   targetContainer: BlobContainerName;
   file: File;
-}): Promise<string | null> {
+}): Promise<string> {
   const fileData: ArrayBuffer = await file.arrayBuffer();
 
-  try {
-    // StorageSharedKeyCredentialを作成
-    const sharedKeyCredential: StorageSharedKeyCredential =
-      new StorageSharedKeyCredential(ACCOUNT_NAME, ACCOUNT_KEY);
+  // StorageSharedKeyCredentialを作成
+  const sharedKeyCredential: StorageSharedKeyCredential =
+    new StorageSharedKeyCredential(ACCOUNT_NAME, ACCOUNT_KEY);
 
-    //   BlobServiceClientを作成
-    const blobServiceClient: BlobServiceClient = new BlobServiceClient(
-      `https://${ACCOUNT_NAME}.blob.core.windows.net`,
-      sharedKeyCredential
-    );
+  //   BlobServiceClientを作成
+  const blobServiceClient: BlobServiceClient = new BlobServiceClient(
+    `https://${ACCOUNT_NAME}.blob.core.windows.net`,
+    sharedKeyCredential
+  );
 
-    // コンテナクライアントを取得
-    const containerClient: ContainerClient =
-      blobServiceClient.getContainerClient(CONTAINER_NAME[targetContainer]);
+  // コンテナクライアントを取得
+  const containerClient: ContainerClient = blobServiceClient.getContainerClient(
+    CONTAINER_NAME[targetContainer]
+  );
 
-    // Blob名を指定
-    const blobName: string = `${crypto.randomUUID()}-${file.name}`;
-    const blockBlobClient: BlockBlobClient =
-      containerClient.getBlockBlobClient(blobName);
+  // Blob名を指定
+  const blobName: string = `${crypto.randomUUID()}-${file.name}`;
+  const blockBlobClient: BlockBlobClient =
+    containerClient.getBlockBlobClient(blobName);
 
-    // Blobコンテナにデータをアップロード
-    const uploadBlobResponse: BlockBlobUploadResponse =
-      await blockBlobClient.upload(fileData, Buffer.byteLength(fileData));
+  // Blobコンテナにデータをアップロード
+  const uploadBlobResponse: BlockBlobUploadResponse =
+    await blockBlobClient.upload(fileData, Buffer.byteLength(fileData));
 
-    console.log(
-      `Upload block blob ${blobName} successfully`,
-      uploadBlobResponse.requestId
-    );
+  console.log(
+    `Upload block blob ${blobName} successfully`,
+    uploadBlobResponse.requestId
+  );
 
-    return blobName;
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
+  return blobName;
 }
 
 export async function downloadBlobByName({
@@ -153,38 +156,35 @@ export async function downloadBlobByName({
 }: {
   targetContainer: BlobContainerName;
   blobName: string;
-}): Promise<Buffer | void> {
-  try {
-    // StorageSharedKeyCredentialを作成
-    const sharedKeyCredential: StorageSharedKeyCredential =
-      new StorageSharedKeyCredential(ACCOUNT_NAME, ACCOUNT_KEY);
+}): Promise<Buffer> {
+  // StorageSharedKeyCredentialを作成
+  const sharedKeyCredential: StorageSharedKeyCredential =
+    new StorageSharedKeyCredential(ACCOUNT_NAME, ACCOUNT_KEY);
 
-    // BlobServiceClientを作成
-    const blobServiceClient: BlobServiceClient = new BlobServiceClient(
-      `https://${ACCOUNT_NAME}.blob.core.windows.net`,
-      sharedKeyCredential
-    );
+  // BlobServiceClientを作成
+  const blobServiceClient: BlobServiceClient = new BlobServiceClient(
+    `https://${ACCOUNT_NAME}.blob.core.windows.net`,
+    sharedKeyCredential
+  );
 
-    // コンテナクライアントを取得
-    const containerClient: ContainerClient =
-      blobServiceClient.getContainerClient(CONTAINER_NAME[targetContainer]);
+  // コンテナクライアントを取得
+  const containerClient: ContainerClient = blobServiceClient.getContainerClient(
+    CONTAINER_NAME[targetContainer]
+  );
 
-    // Blob名を指定
-    const blockBlobClient: BlockBlobClient =
-      containerClient.getBlockBlobClient(blobName);
+  // Blob名を指定
+  const blockBlobClient: BlockBlobClient =
+    containerClient.getBlockBlobClient(blobName);
 
-    //blobからデータをダウンロード
-    const downloadBlockBlobResponse: BlobDownloadResponseParsed =
-      await blockBlobClient.download(0);
+  //blobからデータをダウンロード
+  const downloadBlockBlobResponse: BlobDownloadResponseParsed =
+    await blockBlobClient.download(0);
 
-    if (!downloadBlockBlobResponse.readableStreamBody) {
-      throw new Error("blob download failed");
-    }
-
-    return await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
-  } catch (error) {
-    console.error(error);
+  if (!downloadBlockBlobResponse.readableStreamBody) {
+    throw new Error("blob download failed");
   }
+
+  return await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
 
   function streamToBuffer(
     readableStream: NodeJS.ReadableStream

@@ -167,6 +167,7 @@ app.get(
           live_link: true,
           product: {
             select: {
+              id: true,
               name: true,
               price: true,
               thumbnail_link: true,
@@ -290,6 +291,7 @@ app.get("/:id", async (c) => {
         },
         product: {
           select: {
+            id: true,
             name: true,
             price: true,
             thumbnail_link: true,

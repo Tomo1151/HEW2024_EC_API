@@ -3,5 +3,7 @@
     "node_modules{,/**}",
     ".vscode{,/**},",
     ".env{,/**}"
-  ]
+  ],
+  "appService.defaultWebAppToDeploy": "/subscriptions/a72894b1-d378-4041-9df7-390f238d8814/resourceGroups/hal-th24-rg-ih22-iha05/providers/Microsoft.Web/sites/Miseba-API",
+  "appService.deploySubpath": "."
 }

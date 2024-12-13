@@ -245,6 +245,181 @@ app.get("/:username/posts", async (c) => {
   return c.json({ success: true, data: posts, length: posts.length }, 200);
 });
 
+// MARK: usernameのユーザーの出品を取得
+app.get("/:username/products", async (c) => {
+  let posts;
+  try {
+    const username: string = c.req.param("username");
+    const userId: string = await getUserIdFromCookie(c);
+
+    posts = await prisma.post.findMany({
+      where: {
+        AND: [{ author: { username } }, { replied_ref: null }],
+        NOT: { product: null },
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+            icon_link: true,
+          },
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            thumbnail_link: true,
+            live_release: true,
+          },
+        },
+        images: {
+          select: {
+            image_link: true,
+          },
+        },
+        reposts: {
+          where: {
+            userId,
+          },
+        },
+        likes: {
+          where: {
+            userId,
+          },
+        },
+        replies: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                nickname: true,
+                icon_link: true,
+              },
+            },
+
+            likes: {
+              where: {
+                userId,
+              },
+            },
+
+            reposts: {
+              where: {
+                userId,
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    return c.json({ success: false, error: "User not found", data: [] }, 404);
+  }
+  return c.json({ success: true, data: posts, length: posts.length }, 200);
+});
+
+// MARK: usernameのユーザーのいいねを取得
+app.get("/:username/likes", async (c) => {
+  let posts;
+  try {
+    const username: string = c.req.param("username");
+    const userId: string = await getUserIdFromCookie(c);
+
+    const { id }: { id: string } = await prisma.user.findUniqueOrThrow({
+      where: { username },
+      select: { id: true },
+    });
+
+    posts = await prisma.post.findMany({
+      where: {
+        AND: [
+          {
+            likes: {
+              some: {
+                userId: id,
+              },
+            },
+          },
+          { replied_ref: null },
+        ],
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+            icon_link: true,
+          },
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            thumbnail_link: true,
+            live_release: true,
+          },
+        },
+        images: {
+          select: {
+            image_link: true,
+          },
+        },
+        reposts: {
+          where: {
+            userId,
+          },
+        },
+        likes: {
+          where: {
+            userId,
+          },
+        },
+        replies: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                nickname: true,
+                icon_link: true,
+              },
+            },
+
+            likes: {
+              where: {
+                userId,
+              },
+            },
+
+            reposts: {
+              where: {
+                userId,
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch (e) {
+    console.log(e);
+    return c.json({ success: false, error: "User not found", data: [] }, 404);
+  }
+  return c.json({ success: true, data: posts, length: posts.length }, 200);
+});
+
 // MARK: ユーザーを削除
 app.delete("/:username", isAuthenticated, async (c) => {
   const userId = c.get("jwtPayload").sub;

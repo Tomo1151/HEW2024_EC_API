@@ -7,7 +7,12 @@ import { z } from "zod";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 
-import { getUserIdFromCookie, uploadBlobData } from "./utils.js";
+import {
+  getUserIdFromCookie,
+  sendNotification,
+  uploadBlobData,
+} from "./utils.js";
+import { NOTIFICATION_TYPES } from "../constants/notifications.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -68,7 +73,7 @@ app.post(
           },
         });
 
-        await prisma.post.update({
+        const ref = await prisma.post.update({
           where: {
             id: postId,
           },
@@ -76,6 +81,9 @@ app.post(
             comment_count: {
               increment: 1,
             },
+          },
+          select: {
+            author: true,
           },
         });
 
@@ -116,6 +124,14 @@ app.post(
             images: true,
           },
         });
+
+        await sendNotification({
+          type: NOTIFICATION_TYPES.COMMENT,
+          relPostId: postId,
+          senderId: userId,
+          recepientId: ref.author.id,
+        });
+
         return c.json({ success: true, data: post }, 201);
       } catch (error) {
         console.log(error);
@@ -150,7 +166,7 @@ app.post(
           },
         });
 
-        await prisma.post.update({
+        const ref = await prisma.post.update({
           where: {
             id: postId,
           },
@@ -158,6 +174,9 @@ app.post(
             comment_count: {
               increment: 1,
             },
+          },
+          select: {
+            author: true,
           },
         });
 
@@ -175,6 +194,13 @@ app.post(
           include: {
             images: true,
           },
+        });
+
+        await sendNotification({
+          type: NOTIFICATION_TYPES.COMMENT,
+          relPostId: postId,
+          senderId: userId,
+          recepientId: ref.author.id,
         });
 
         return c.json({ success: true, data: post }, 201);
@@ -195,7 +221,7 @@ app.post(
           repliedId: postId,
         },
       });
-      await prisma.post.update({
+      const ref = await prisma.post.update({
         where: {
           id: postId,
         },
@@ -204,7 +230,18 @@ app.post(
             increment: 1,
           },
         },
+        select: {
+          author: true,
+        },
       });
+
+      await sendNotification({
+        type: NOTIFICATION_TYPES.COMMENT,
+        relPostId: postId,
+        senderId: userId,
+        recepientId: ref.author.id,
+      });
+
       return c.json({ success: true, post }, 200);
     } catch (e) {
       return c.json(

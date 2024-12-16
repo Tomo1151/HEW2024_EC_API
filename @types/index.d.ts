@@ -1,3 +1,5 @@
+import * as exp from "node:constants";
+
 export type jsonResponse = {
   success: boolean;
   data: object;
@@ -10,3 +12,10 @@ export type IMAGE_MIME_TYPE =
   | "image/gif"
   | "image/webp"
   | "image/svg+xml";
+
+export type Notification = {
+  type: number;
+  relPostId?: string;
+  senderId: string;
+  recepientId: string;
+};

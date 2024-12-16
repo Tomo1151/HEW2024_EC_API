@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
+import { sendNotification } from "./utils.js";
+import { NOTIFICATION_TYPES } from "../constants/notifications.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -77,6 +79,13 @@ app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
         },
       },
       ...postParams,
+    });
+
+    await sendNotification({
+      type: NOTIFICATION_TYPES.REPOST,
+      relPostId: postId,
+      senderId: userId,
+      recepientId: ref.author.id,
     });
 
     return c.json({ success: true, data: { ref } }, 200);
@@ -156,6 +165,17 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
         },
       },
       ...postParams,
+    });
+
+    await prisma.notification.delete({
+      where: {
+        type_senderId_recepientId_relPostId: {
+          type: NOTIFICATION_TYPES.REPOST,
+          relPostId: postId,
+          senderId: userId,
+          recepientId: ref.author.id,
+        },
+      },
     });
 
     return c.json({ success: true, data: { ref } }, 200);

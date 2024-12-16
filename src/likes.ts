@@ -3,6 +3,8 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
+import { NOTIFICATION_TYPES } from "../constants/notifications.js";
+import { sendNotification } from "./utils.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -81,6 +83,22 @@ app.post("/posts/:postId/like", isAuthenticated, async (c) => {
       ...postParams,
     });
 
+    await sendNotification({
+      type: NOTIFICATION_TYPES.LIKE,
+      relPostId: postId,
+      senderId: userId,
+      recepientId: ref.userId,
+    });
+
+    // await prisma.notification.create({
+    //   data: {
+    //     type: 1,
+    //     relPostId: postId,
+    //     senderId: userId,
+    //     recepientId: ref.userId,
+    //   },
+    // });
+
     return c.json({ success: true, data: { ref } }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Failed to like the post" }, 400);
@@ -157,6 +175,17 @@ app.delete("/posts/:postId/like", isAuthenticated, async (c) => {
         },
       },
       ...postParams,
+    });
+
+    await prisma.notification.delete({
+      where: {
+        type_senderId_recepientId_relPostId: {
+          type: NOTIFICATION_TYPES.LIKE,
+          senderId: userId,
+          recepientId: ref.userId,
+          relPostId: postId,
+        },
+      },
     });
 
     return c.json({ success: true, data: { ref } }, 200);

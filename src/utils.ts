@@ -1,6 +1,9 @@
 import { Context } from "hono";
 import { getCookie } from "hono/cookie";
 import { verify } from "hono/jwt";
+import { PrismaClient } from "@prisma/client";
+
+import { Notification } from "../@types";
 
 import * as crypto from "crypto";
 
@@ -27,6 +30,7 @@ if (
   process.exit(1);
 }
 
+const prisma = new PrismaClient();
 const ACCOUNT_NAME: string = process.env.ACCOUNT_NAME;
 const ACCOUNT_KEY: string = process.env.ACCOUNT_KEY;
 const USER_ICON_CONTAINER_NAME: string = process.env.USER_ICON_CONTAINER_NAME;
@@ -62,6 +66,14 @@ export async function getUserIdFromCookie(c: Context): Promise<string> {
   } catch (error) {
     return "";
   }
+}
+
+export async function sendNotification(
+  notification: Notification
+): Promise<void> {
+  await prisma.notification.create({
+    data: notification,
+  });
 }
 
 export async function deleteBlobByName({

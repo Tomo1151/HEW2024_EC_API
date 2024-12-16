@@ -7,6 +7,7 @@ import isAuthenticated from "./middlewares/isAuthenticated.js";
 
 import { getUserIdFromCookie, uploadBlobData } from "./utils.js";
 import { IMAGE_MIME_TYPE } from "../@types/index.js";
+import { NOTIFICATION_TYPES } from "../constants/notifications.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -91,10 +92,6 @@ app.get(
       before,
     }: { tagName?: string; after?: string; before?: string } =
       c.req.valid("query");
-
-    console.log("Params", tagName, after, before);
-    console.log("after", after);
-    console.log("before", before);
 
     const targetId = before ? before : after;
 
@@ -571,13 +568,27 @@ app.delete("/:id", isAuthenticated, async (c) => {
     });
 
     if (post.repliedId) {
-      await prisma.post.update({
+      const ref = await prisma.post.update({
         where: {
           id: post.repliedId,
         },
         data: {
           comment_count: {
             decrement: 1,
+          },
+        },
+        select: {
+          author: true,
+        },
+      });
+
+      await prisma.notification.delete({
+        where: {
+          type_senderId_recepientId_relPostId: {
+            type: NOTIFICATION_TYPES.COMMENT,
+            senderId: userId,
+            recepientId: ref.author.id,
+            relPostId: post.repliedId,
           },
         },
       });

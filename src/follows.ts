@@ -3,7 +3,8 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
-import { getUserIdFromCookie } from "./utils.js";
+import { getUserIdFromCookie, sendNotification } from "./utils.js";
+import { NOTIFICATION_TYPES } from "../constants/notifications.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -152,6 +153,12 @@ app.post("/:username/follow", isAuthenticated, async (c) => {
       },
     });
 
+    await sendNotification({
+      type: NOTIFICATION_TYPES.FOLLOW,
+      senderId: userId,
+      recepientId: reqUser.id,
+    });
+
     return c.json({ success: true, error: "User followed successfully" }, 200);
   } catch (e) {
     return c.json({ success: false, error: "Invalid Request data" }, 400);
@@ -181,6 +188,14 @@ app.delete("/:username/follow", isAuthenticated, async (c) => {
           followerId: userId,
           followeeId: reqUser.id,
         },
+      },
+    });
+
+    await prisma.notification.deleteMany({
+      where: {
+        type: NOTIFICATION_TYPES.FOLLOW,
+        senderId: userId,
+        recepientId: reqUser.id,
       },
     });
 

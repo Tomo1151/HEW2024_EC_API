@@ -32,7 +32,8 @@ model User {
   followees          Follow[]           @relation("asFollower")
   reposts            Repost[]
   likes              Like[]
-  notifications      UserNotification[]
+  sent_notification  Notification[]     @relation("asSender")
+  received_notification Notification[] @relation("asRecepient")
   licensed_downloads LicensedDownload[]
   refresh_token      RefreshToken?
 
@@ -40,22 +41,23 @@ model User {
 }
 
 model Post {
-  id            String       @id @unique @default(cuid())
+  id            String         @id @unique @default(cuid())
   content       String
   live_link     String?
-  like_count    Int          @default(0)
-  ref_count     Int          @default(0)
-  comment_count Int          @default(0)
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @default(now()) @updatedAt
-  author        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  like_count    Int            @default(0)
+  ref_count     Int            @default(0)
+  comment_count Int            @default(0)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @default(now()) @updatedAt
+  author        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   images        PostImage[]
   product       Product?
-  reposts       Repost[]     @relation("Repost")
-  replies       Post[]       @relation("Reply")
+  reposts       Repost[]       @relation("Repost")
+  replies       Post[]         @relation("Reply")
   likes         Like[]
   tags          TaggedPost[]
-  replied_ref   Post?        @relation("Reply", fields: [repliedId], references: [id])
+  notifications Notification[] @relation("asNotification")
+  replied_ref   Post?          @relation("Reply", fields: [repliedId], references: [id])
   userId        String
   repliedId     String?
 
@@ -63,9 +65,9 @@ model Post {
 }
 
 model PostImage {
-  id         String   @id @unique @default(cuid())
-  image_link String   @unique
-  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id         String @id @unique @default(cuid())
+  image_link String @unique
+  post       Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId     String
 
   @@map("post_images")
@@ -204,21 +206,30 @@ model RefreshToken {
 
 model Notification {
   id                 String             @id @unique @default(cuid())
-  content            String
+  // type 0: follow, 1: like, 2: repost, 3: comment, 4: purchase, 5: license
+  type               Int
+  // content            String
   is_read            Boolean            @default(false)
+  rel_post           Post?              @relation("asNotification", fields: [relPostId], references: [id])
+  recepient          User               @relation("asRecepient", fields: [recepientId], references: [id], onDelete: Cascade)
+  sender             User               @relation("asSender", fields: [senderId], references: [id], onDelete: Cascade)
   created_at         DateTime           @default(now())
   updated_at         DateTime           @default(now()) @updatedAt
-  user_notifications UserNotification[]
+  // user_notifications UserNotification[]
+  senderId           String
+  recepientId        String
+  relPostId          String?
 
+  @@unique([type, senderId, recepientId, relPostId])
   @@map("notifications")
 }
 
-model UserNotification {
-  id             String       @id @unique @default(cuid())
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  userId         String
-  notificationId String
+// model UserNotification {
+//   id             String       @id @unique @default(cuid())
+//   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+//   userId         String
+//   notificationId String
 
-  @@map("user_notifications")
-}
+//   @@map("user_notifications")
+// }

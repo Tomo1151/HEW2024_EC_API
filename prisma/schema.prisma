@@ -57,7 +57,7 @@ model Post {
   likes         Like[]
   tags          TaggedPost[]
   notifications Notification[] @relation("asNotification")
-  replied_ref   Post?          @relation("Reply", fields: [repliedId], references: [id])
+  replied_ref   Post?          @relation("Reply", fields: [repliedId], references: [id], onDelete: Cascade)
   userId        String
   repliedId     String?
 

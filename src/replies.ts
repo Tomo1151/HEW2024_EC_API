@@ -46,6 +46,7 @@ app.post(
   isAuthenticated,
   zValidator("form", replyCreateSchema, (result, c) => {
     if (!result.success) {
+      console.log(result.error);
       return c.json({ success: false, error: result.error, data: null }, 400);
     }
   }),
@@ -127,7 +128,7 @@ app.post(
 
         await sendNotification({
           type: NOTIFICATION_TYPES.COMMENT,
-          relPostId: postId,
+          relPostId: id,
           senderId: userId,
           recepientId: ref.author.id,
         });
@@ -198,7 +199,7 @@ app.post(
 
         await sendNotification({
           type: NOTIFICATION_TYPES.COMMENT,
-          relPostId: postId,
+          relPostId: id,
           senderId: userId,
           recepientId: ref.author.id,
         });
@@ -237,13 +238,14 @@ app.post(
 
       await sendNotification({
         type: NOTIFICATION_TYPES.COMMENT,
-        relPostId: postId,
+        relPostId: post.id,
         senderId: userId,
         recepientId: ref.author.id,
       });
 
       return c.json({ success: true, post }, 200);
     } catch (e) {
+      console.error(e);
       return c.json(
         { success: false, error: "Failed to create the post" },
         400

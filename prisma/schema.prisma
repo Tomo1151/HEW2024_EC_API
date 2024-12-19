@@ -210,7 +210,7 @@ model Notification {
   type               Int
   // content            String
   is_read            Boolean            @default(false)
-  rel_post           Post?              @relation("asNotification", fields: [relPostId], references: [id])
+  rel_post           Post?              @relation("asNotification", fields: [relPostId], references: [id], onDelete: Cascade)
   recepient          User               @relation("asRecepient", fields: [recepientId], references: [id], onDelete: Cascade)
   sender             User               @relation("asSender", fields: [senderId], references: [id], onDelete: Cascade)
   created_at         DateTime           @default(now())

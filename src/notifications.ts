@@ -58,7 +58,7 @@ app.get(
         orderBy: {
           created_at: "desc",
         },
-        take: 2,
+        take: 10,
         select: {
           id: true,
           type: true,

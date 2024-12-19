@@ -74,6 +74,11 @@ app.get(
             select: {
               id: true,
               content: true,
+              replied_ref: {
+                select: {
+                  id: true,
+                },
+              },
               product: {
                 select: {
                   name: true,

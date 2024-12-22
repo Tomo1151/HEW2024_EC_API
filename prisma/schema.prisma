@@ -116,7 +116,7 @@ model Like {
 
 model Tag {
   id           String       @id @unique @default(cuid())
-  name         String
+  name         String       @unique
   created_at   DateTime     @default(now())
   updated_at   DateTime     @default(now()) @updatedAt
   tagged_posts TaggedPost[]

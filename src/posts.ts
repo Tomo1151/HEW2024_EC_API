@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -8,6 +9,7 @@ import isAuthenticated from "./middlewares/isAuthenticated.js";
 import { getUserIdFromCookie, uploadBlobData } from "./utils.js";
 import { IMAGE_MIME_TYPE } from "../@types/index.js";
 import { NOTIFICATION_TYPES } from "../constants/notifications.js";
+import { connect } from "http2";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -26,6 +28,7 @@ const MAX_IMAGE_COUNT: number = 4;
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
+  "tags[]": z.array(z.string().min(1).max(64)).optional(),
   files: z
     .custom<File | FileList>()
     .refine(
@@ -183,6 +186,15 @@ app.get(
               userId,
             },
           },
+          tags: {
+            select: {
+              tag: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
           updated_at: true,
           userId: true,
         },
@@ -334,6 +346,15 @@ app.get("/:id", async (c) => {
             },
           },
         },
+        tags: {
+          select: {
+            tag: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
     return c.json({ success: true, data: post }, 200);
@@ -347,8 +368,6 @@ app.post(
   "/",
   isAuthenticated,
   zValidator("form", postCreateSchema, (result, c) => {
-    // console.log(postCreateSchema);
-    // console.log(result);
     if (!result.success) {
       return c.json(
         {
@@ -363,135 +382,101 @@ app.post(
   async (c) => {
     const formData: {
       content: string;
+      "tags[]": string[];
       files: (string | File)[] | (string | File);
     } = await c.req.parseBody({
       all: true,
     });
     const userId = c.get("jwtPayload").sub;
-
+    const tagNames: string[] = formData["tags[]"]
+      ? [formData["tags[]"]].flat()
+      : [];
     const content: string = formData.content;
     const files = formData.files;
 
-    // 画像が複数枚の場合
-    if (files instanceof Array) {
-      try {
-        const { id } = await prisma.post.create({
-          data: {
-            content,
-            userId,
-          },
-        });
-
-        for (const file of files) {
-          if (!(file instanceof File)) continue;
-          const blobName: string | null = await uploadBlobData({
+    async function uploadImages(files: Array<File>): Promise<string[]> {
+      const blobNames: (string | null)[] = await Promise.all(
+        files.map(async (file) => {
+          if (!(file instanceof File)) return null;
+          return await uploadBlobData({
             targetContainer: "post",
             file,
           });
+        })
+      );
 
-          if (!blobName) {
-            return c.json(
-              { success: false, error: "Failed to save image", data: null },
-              500
-            );
-          }
-
-          try {
-            await prisma.postImage.create({
-              data: {
-                postId: id,
-                image_link: blobName,
-              },
-            });
-          } catch (error) {
-            console.log(error);
-            return c.json(
-              { success: false, error: "Failed to create post", data: null },
-              500
-            );
-          }
-        }
-        const post = await prisma.post.findUnique({
-          where: {
-            id,
-          },
-          include: {
-            images: true,
-          },
-        });
-
-        return c.json({ success: true, data: post }, 201);
-      } catch (error) {
-        console.log(error);
-        return c.json(
-          { success: false, error: "Failed to create post", data: null },
-          500
-        );
+      if (blobNames.includes(null)) {
+        throw new Error("Failed to upload image");
       }
+
+      return blobNames as string[];
     }
 
-    // 画像が1枚の場合
-    if (files instanceof File) {
-      console.log("File");
-      const blobName: string | null = await uploadBlobData({
-        targetContainer: "post",
-        file: files,
-      });
+    const images = files ? [files].flat() : [];
 
-      if (!blobName) {
-        return c.json(
-          { success: false, error: "Failed to save image", data: null },
-          500
+    if (!images.every((file) => file instanceof File)) {
+      return c.json(
+        {
+          success: false,
+          error: ["Invalid data type"],
+          data: null,
+        },
+        400
+      );
+    }
+
+    const blobNames: string[] = await uploadImages(images);
+
+    try {
+      const post = await prisma.$transaction(async (prisma) => {
+        console.log("Transaction");
+        console.dir(tagNames);
+        const tags = await Promise.all(
+          tagNames.map((tag) =>
+            prisma.tag.upsert({
+              where: {
+                name: tag,
+              },
+              update: {},
+              create: {
+                name: tag,
+              },
+            })
+          )
         );
-      }
 
-      try {
-        const { id } = await prisma.post.create({
+        const post = await prisma.post.create({
           data: {
             content,
             userId,
+            tags: {
+              create: tags.map((tag) => ({
+                tag: {
+                  connectOrCreate: {
+                    where: { name: tag.name },
+                    create: { name: tag.name },
+                  },
+                },
+              })),
+            },
+            images: {
+              createMany: {
+                data: blobNames.map((blobName) => ({
+                  image_link: blobName,
+                })),
+              },
+            },
           },
         });
 
-        await prisma.postImage.create({
-          data: {
-            postId: id,
-            image_link: blobName,
-          },
-        });
-
-        const post = await prisma.post.findUnique({
-          where: {
-            id,
-          },
-          include: {
-            images: true,
-          },
-        });
-
-        return c.json({ success: true, data: post }, 201);
-      } catch (error) {
-        console.log(error);
-        return c.json(
-          { success: false, error: "Failed to create post", data: null },
-          500
-        );
-      }
-    }
-
-    // 画像がない場合
-    try {
-      const post = await prisma.post.create({
-        data: {
-          content,
-          userId,
-        },
+        return post;
       });
+
       return c.json({ success: true, data: post }, 201);
     } catch (error) {
       console.log(error);
       return c.json(
-        { success: false, error: "Failed to create post", data: null },
+        { success: false, error: ["Failed to create post"], data: null },
         500
       );
     }

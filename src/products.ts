@@ -27,6 +27,7 @@ const productCreateSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   price: z.string().min(1).optional(),
+  "tags[]": z.array(z.string()).optional(),
   data: z
     .custom<File>()
     // .refine((files) => files instanceof File, {
@@ -182,6 +183,8 @@ app.post(
         data: string | File;
         images: (string | File)[] | (string | File);
       } = await c.req.parseBody({ all: true });
+
+      // @TODO: あとでリファクタリング，タグの追加
 
       try {
         if (data instanceof File) {

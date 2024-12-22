@@ -236,6 +236,15 @@ app.get("/:username/posts", async (c) => {
             },
           },
         },
+        tags: {
+          select: {
+            tag: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
   } catch (e) {
@@ -313,6 +322,15 @@ app.get("/:username/products", async (c) => {
             reposts: {
               where: {
                 userId,
+              },
+            },
+          },
+        },
+        tags: {
+          select: {
+            tag: {
+              select: {
+                name: true,
               },
             },
           },
@@ -407,6 +425,15 @@ app.get("/:username/likes", async (c) => {
             reposts: {
               where: {
                 userId,
+              },
+            },
+          },
+        },
+        tags: {
+          select: {
+            tag: {
+              select: {
+                name: true,
               },
             },
           },

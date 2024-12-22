@@ -58,6 +58,15 @@ app.post("/posts/:postId/like", isAuthenticated, async (c) => {
           userId,
         },
       },
+      tags: {
+        select: {
+          tag: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
       // updated_at: true,
       userId: true,
     },
@@ -148,6 +157,15 @@ app.delete("/posts/:postId/like", isAuthenticated, async (c) => {
       reposts: {
         where: {
           userId,
+        },
+      },
+      tags: {
+        select: {
+          tag: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
       // updated_at: true,

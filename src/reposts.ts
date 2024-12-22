@@ -56,6 +56,15 @@ app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
           userId,
         },
       },
+      tags: {
+        select: {
+          tag: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
       updated_at: true,
       userId: true,
     },
@@ -138,6 +147,15 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
       reposts: {
         where: {
           userId,
+        },
+      },
+      tags: {
+        select: {
+          tag: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
       updated_at: true,

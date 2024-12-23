@@ -176,15 +176,22 @@ app.post(
         price,
         data,
         images,
+        "tags[]": tags,
       }: {
         name: string;
         description: string;
         price: string;
         data: string | File;
         images: (string | File)[] | (string | File);
+        "tags[]": string[];
       } = await c.req.parseBody({ all: true });
 
       // @TODO: あとでリファクタリング，タグの追加
+
+      const tagNames: string[] = tags
+        ? [tags].flat().map((tag) => tag.trim().toLowerCase())
+        : [];
+      console.log(tagNames);
 
       try {
         if (data instanceof File) {

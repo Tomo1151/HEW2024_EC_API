@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 import { sendNotification } from "./utils.js";
 import { NOTIFICATION_TYPES } from "../constants/notifications.js";
+import { getPostParams } from "./queries.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -14,61 +15,6 @@ const prisma = new PrismaClient();
 app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
   const postId: string = c.req.param("postId");
   const userId: string = c.get("jwtPayload").sub;
-
-  const postParams = {
-    select: {
-      author: {
-        select: {
-          id: true,
-          username: true,
-          nickname: true,
-          icon_link: true,
-        },
-      },
-      comment_count: true,
-      content: true,
-      created_at: true,
-      id: true,
-      like_count: true,
-      likes: {
-        where: {
-          userId,
-        },
-      },
-      live_link: true,
-      product: {
-        select: {
-          name: true,
-          price: true,
-          thumbnail_link: true,
-          live_release: true,
-        },
-      },
-      images: {
-        select: {
-          image_link: true,
-        },
-      },
-      ref_count: true,
-      replied_ref: true,
-      reposts: {
-        where: {
-          userId,
-        },
-      },
-      tags: {
-        select: {
-          tag: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-      updated_at: true,
-      userId: true,
-    },
-  };
 
   try {
     await prisma.repost.create({
@@ -87,7 +33,7 @@ app.post("/posts/:postId/repost", isAuthenticated, async (c) => {
           increment: 1,
         },
       },
-      ...postParams,
+      ...getPostParams(userId),
     });
 
     await sendNotification({
@@ -108,61 +54,6 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
   const postId: string = c.req.param("postId");
   const userId: string = c.get("jwtPayload").sub;
 
-  const postParams = {
-    select: {
-      author: {
-        select: {
-          id: true,
-          username: true,
-          nickname: true,
-          icon_link: true,
-        },
-      },
-      comment_count: true,
-      content: true,
-      created_at: true,
-      id: true,
-      like_count: true,
-      likes: {
-        where: {
-          userId,
-        },
-      },
-      live_link: true,
-      product: {
-        select: {
-          name: true,
-          price: true,
-          thumbnail_link: true,
-          live_release: true,
-        },
-      },
-      images: {
-        select: {
-          image_link: true,
-        },
-      },
-      ref_count: true,
-      replied_ref: true,
-      reposts: {
-        where: {
-          userId,
-        },
-      },
-      tags: {
-        select: {
-          tag: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-      updated_at: true,
-      userId: true,
-    },
-  };
-
   try {
     await prisma.repost.delete({
       where: {
@@ -182,7 +73,7 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
           decrement: 1,
         },
       },
-      ...postParams,
+      ...getPostParams(userId),
     });
 
     await prisma.notification.delete({

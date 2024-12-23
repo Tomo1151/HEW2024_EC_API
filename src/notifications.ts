@@ -89,17 +89,6 @@ app.get(
         },
       });
 
-      // await prisma.notification.updateMany({
-      //   where: {
-      //     recepientId: {
-      //       in: notifications.map((notification) => notification.recepientId),
-      //     },
-      //   },
-      //   data: {
-      //     is_read: true,
-      //   },
-      // });
-
       return c.json({ success: true, data: notifications }, 200);
     } catch (e) {
       console.error(e);

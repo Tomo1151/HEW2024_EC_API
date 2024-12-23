@@ -30,9 +30,6 @@ const productCreateSchema = z.object({
   "tags[]": z.array(z.string()).optional(),
   data: z
     .custom<File>()
-    // .refine((files) => files instanceof File, {
-    //   message: "Images must be a file or a list of files",
-    // })
     .superRefine((arg, ctx) => {
       if (!(arg instanceof File)) {
         ctx.addIssue({
@@ -56,9 +53,6 @@ const productCreateSchema = z.object({
     .optional(),
   images: z
     .custom<File | FileList>()
-    // .refine((files) => files instanceof File || files instanceof Array, {
-    //   message: "Images must be a file or a list of files",
-    // })
     .superRefine((arg, ctx) => {
       if (
         !(
@@ -78,7 +72,6 @@ const productCreateSchema = z.object({
         if (files instanceof File) {
           return true;
         } else if (files instanceof Array) {
-          // console.log("File length: ", Array.from(files).length);
           return Array.from(files).length <= MAX_IMAGE_COUNT;
         }
       },

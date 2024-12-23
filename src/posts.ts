@@ -8,6 +8,8 @@ import isAuthenticated from "./middlewares/isAuthenticated.js";
 import { getUserIdFromCookie, uploadImages } from "./utils.js";
 import { IMAGE_MIME_TYPE } from "../@types/index.js";
 import { NOTIFICATION_TYPES } from "../constants/notifications.js";
+import { getPostParams } from "./queries.js";
+import { get } from "http";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -141,65 +143,9 @@ app.get(
         query.orderBy = { created_at: "desc" };
       }
 
-      // async function getTimeline(userId?: string) {
-      const postParams = {
-        select: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              nickname: true,
-              icon_link: true,
-            },
-          },
-          comment_count: true,
-          content: true,
-          created_at: true,
-          id: true,
-          like_count: true,
-          likes: {
-            where: {
-              userId,
-            },
-          },
-          live_link: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              thumbnail_link: true,
-              live_release: true,
-            },
-          },
-          images: {
-            select: {
-              image_link: true,
-            },
-          },
-          ref_count: true,
-          replied_ref: true,
-          reposts: {
-            where: {
-              userId,
-            },
-          },
-          tags: {
-            select: {
-              tag: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
-          updated_at: true,
-          userId: true,
-        },
-      };
       // postsを取得
       const posts = await prisma.post.findMany({
-        ...postParams,
+        ...getPostParams(userId),
         ...query,
       });
 
@@ -228,7 +174,7 @@ app.get(
               icon_link: true,
             },
           },
-          post: postParams,
+          post: getPostParams(userId),
         },
         ...query,
       });
@@ -287,73 +233,7 @@ app.get("/:id", async (c) => {
       where: {
         id: c.req.param("id"),
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            nickname: true,
-            icon_link: true,
-          },
-        },
-        product: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            thumbnail_link: true,
-            live_release: true,
-          },
-        },
-        images: {
-          select: {
-            image_link: true,
-          },
-        },
-        reposts: {
-          where: {
-            userId,
-          },
-        },
-        likes: {
-          where: {
-            userId,
-          },
-        },
-        replies: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                nickname: true,
-                icon_link: true,
-              },
-            },
-
-            likes: {
-              where: {
-                userId,
-              },
-            },
-
-            reposts: {
-              where: {
-                userId,
-              },
-            },
-          },
-        },
-        tags: {
-          select: {
-            tag: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+      ...getPostParams(userId),
     });
     return c.json({ success: true, data: post }, 200);
   } catch {

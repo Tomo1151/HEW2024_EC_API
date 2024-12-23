@@ -8,6 +8,7 @@ import {
   getUserIdFromCookie,
   uploadBlobData,
 } from "./utils.js";
+import { getPostParams } from "./queries.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -179,73 +180,7 @@ app.get("/:username/posts", async (c) => {
       orderBy: {
         created_at: "desc",
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            nickname: true,
-            icon_link: true,
-          },
-        },
-        product: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            thumbnail_link: true,
-            live_release: true,
-          },
-        },
-        images: {
-          select: {
-            image_link: true,
-          },
-        },
-        reposts: {
-          where: {
-            userId,
-          },
-        },
-        likes: {
-          where: {
-            userId,
-          },
-        },
-        replies: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                nickname: true,
-                icon_link: true,
-              },
-            },
-
-            likes: {
-              where: {
-                userId,
-              },
-            },
-
-            reposts: {
-              where: {
-                userId,
-              },
-            },
-          },
-        },
-        tags: {
-          select: {
-            tag: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+      ...getPostParams(userId),
     });
   } catch (e) {
     console.log(e);
@@ -269,73 +204,7 @@ app.get("/:username/products", async (c) => {
       orderBy: {
         created_at: "desc",
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            nickname: true,
-            icon_link: true,
-          },
-        },
-        product: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            thumbnail_link: true,
-            live_release: true,
-          },
-        },
-        images: {
-          select: {
-            image_link: true,
-          },
-        },
-        reposts: {
-          where: {
-            userId,
-          },
-        },
-        likes: {
-          where: {
-            userId,
-          },
-        },
-        replies: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                nickname: true,
-                icon_link: true,
-              },
-            },
-
-            likes: {
-              where: {
-                userId,
-              },
-            },
-
-            reposts: {
-              where: {
-                userId,
-              },
-            },
-          },
-        },
-        tags: {
-          select: {
-            tag: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+      ...getPostParams(userId),
     });
   } catch (e) {
     console.log(e);
@@ -372,73 +241,7 @@ app.get("/:username/likes", async (c) => {
       orderBy: {
         created_at: "desc",
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            nickname: true,
-            icon_link: true,
-          },
-        },
-        product: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            thumbnail_link: true,
-            live_release: true,
-          },
-        },
-        images: {
-          select: {
-            image_link: true,
-          },
-        },
-        reposts: {
-          where: {
-            userId,
-          },
-        },
-        likes: {
-          where: {
-            userId,
-          },
-        },
-        replies: {
-          include: {
-            author: {
-              select: {
-                id: true,
-                username: true,
-                nickname: true,
-                icon_link: true,
-              },
-            },
-
-            likes: {
-              where: {
-                userId,
-              },
-            },
-
-            reposts: {
-              where: {
-                userId,
-              },
-            },
-          },
-        },
-        tags: {
-          select: {
-            tag: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+      ...getPostParams(userId),
     });
   } catch (e) {
     console.log(e);

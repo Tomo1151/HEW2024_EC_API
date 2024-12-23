@@ -378,6 +378,7 @@ app.post(
     }
   }),
   async (c) => {
+    // フォームデータの取得
     const formData: {
       content: string;
       "tags[]": string[];
@@ -386,13 +387,18 @@ app.post(
       all: true,
     });
     const userId = c.get("jwtPayload").sub;
+
+    // タグの前後の空白を削除して小文字に変換，1次元の配列に変換
     const tagNames: string[] = formData["tags[]"]
-      ? [formData["tags[]"]].flat()
+      ? [formData["tags[]"]].flat().map((tag) => tag.trim().toLowerCase())
       : [];
     const content: string = formData.content;
     const files = formData.files;
+
+    // 画像ファイルの配列に変換
     const images = files ? [files].flat() : [];
 
+    // 画像ファイルのバリデーション
     if (!images.every((file) => file instanceof File)) {
       return c.json(
         {
@@ -404,12 +410,12 @@ app.post(
       );
     }
 
-    const blobNames: string[] = await uploadImages(images);
-
     try {
+      // 画像をアップロード
+      const blobNames: string[] = await uploadImages(images);
+
+      //  投稿を作成 (トランザクション: タグの作成 -> 投稿の作成)
       const post = await prisma.$transaction(async (prisma) => {
-        console.log("Transaction");
-        console.dir(tagNames);
         const tags = await Promise.all(
           tagNames.map((tag) =>
             prisma.tag.upsert({

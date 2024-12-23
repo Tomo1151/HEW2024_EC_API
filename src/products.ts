@@ -6,7 +6,7 @@ import { zValidator } from "@hono/zod-validator";
 import { IMAGE_MIME_TYPE } from "../@types";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
-import { deleteBlobByName, uploadBlobData } from "./utils.js";
+import { deleteBlobByName, uploadBlobData, uploadImages } from "./utils.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -166,10 +166,9 @@ app.post(
   async (c) => {
     const userId: string = c.get("jwtPayload").sub;
     let data_url: string;
-    let images_link: Array<string> = [];
-    let thumbnail_link: string;
 
     try {
+      // フォームデータの取得
       const {
         name,
         description,
@@ -186,14 +185,28 @@ app.post(
         "tags[]": string[];
       } = await c.req.parseBody({ all: true });
 
-      // @TODO: あとでリファクタリング，タグの追加
-
+      // タグの前後の空白を削除して小文字に変換，1次元の配列に変換
       const tagNames: string[] = tags
         ? [tags].flat().map((tag) => tag.trim().toLowerCase())
         : [];
-      console.log(tagNames);
+
+      //  画像ファイルの配列に変換
+      const imagesArray = images ? [images].flat() : [];
+
+      // 画像ファイルのバリデーション
+      if (!imagesArray.every((image) => image instanceof File)) {
+        return c.json(
+          {
+            success: false,
+            error: ["Images must be a file or a list of files"],
+            data: null,
+          },
+          400
+        );
+      }
 
       try {
+        // 商品データのアップロード
         if (data instanceof File) {
           data_url = await uploadBlobData({
             targetContainer: "product",
@@ -203,95 +216,79 @@ app.post(
           return c.json(
             {
               success: false,
-              error: "Failed to upload product data",
+              error: ["Data must be a file"],
+              data: null,
             },
-            500
+            400
           );
         }
 
-        if (images instanceof Array) {
-          for (const image of images) {
-            if (!(image instanceof File)) continue;
-            const image_blob_name: string = await uploadBlobData({
-              targetContainer: "post",
-              file: image,
-            });
-            if (image_blob_name) {
-              images_link.push(image_blob_name);
-            }
-          }
-          if (images_link.length === 0) {
-            return c.json(
-              {
-                success: false,
-                error: "Failed to upload product images data",
-              },
-              500
-            );
-          }
-
-          thumbnail_link = images_link[0];
-        } else if (images instanceof File) {
-          const image_blob_name: string = await uploadBlobData({
-            targetContainer: "post",
-            file: images,
-          });
-          if (!image_blob_name) {
-            return c.json(
-              {
-                success: false,
-                error: "Failed to upload product thumbnail data",
-              },
-              500
-            );
-          }
-          images_link.push(image_blob_name);
-          thumbnail_link = image_blob_name;
-        } else {
+        // 商品画像のアップロード
+        const blobNames: string[] = await uploadImages(imagesArray);
+        const priceNum: number = parseInt(price);
+        if (isNaN(priceNum)) {
           return c.json(
-            {
-              success: false,
-              error: "Failed to upload product thumbnail data",
-            },
-            500
+            { success: false, error: "Price must be a number" },
+            400
           );
         }
+
+        // 商品の作成 (トランザクション: タグの作成 -> 商品の作成)
+        const post = await prisma.$transaction(async (prisma) => {
+          const tags = await Promise.all(
+            tagNames.map((name) =>
+              prisma.tag.upsert({
+                where: { name },
+                update: {},
+                create: { name },
+              })
+            )
+          );
+
+          const post = await prisma.post.create({
+            data: {
+              userId,
+              content: description,
+              images: {
+                create: blobNames.map((link) => {
+                  return { image_link: link };
+                }),
+              },
+              product: {
+                create: {
+                  name,
+                  price: priceNum,
+                  product_link: data_url,
+                  thumbnail_link: blobNames[0],
+                  live_release: false,
+                },
+              },
+              tags: {
+                create: tags.map((tag) => ({
+                  tag: {
+                    connectOrCreate: {
+                      where: { name: tag.name },
+                      create: { name: tag.name },
+                    },
+                  },
+                })),
+              },
+            },
+          });
+
+          return post;
+        });
+
+        return c.json({ success: true, data: post }, 201);
       } catch (error) {
         return c.json(
           {
             success: false,
-            error: "Failed to upload product thumbnail data",
+            error: [error],
           },
           500
         );
       }
-      const priceNum: number = parseInt(price);
-      if (isNaN(priceNum)) {
-        return c.json({ success: false, error: "Price must be a number" }, 400);
-      }
-
-      const post = await prisma.post.create({
-        data: {
-          userId,
-          content: description,
-          images: {
-            create: images_link.map((link) => {
-              return { image_link: link };
-            }),
-          },
-          product: {
-            create: {
-              name,
-              price: priceNum,
-              product_link: data_url,
-              thumbnail_link,
-              live_release: false,
-            },
-          },
-        },
-      });
-
-      return c.json({ success: true, data: post }, 201);
     } catch (e) {
       console.log(e);
       return c.json(

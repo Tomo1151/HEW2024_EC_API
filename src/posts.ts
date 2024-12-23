@@ -9,7 +9,6 @@ import { getUserIdFromCookie, uploadImages } from "./utils.js";
 import { IMAGE_MIME_TYPE } from "../@types/index.js";
 import { NOTIFICATION_TYPES } from "../constants/notifications.js";
 import { getPostParams } from "./queries.js";
-import { get } from "http";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -143,6 +142,40 @@ app.get(
         query.orderBy = { created_at: "desc" };
       }
 
+      console.log("tags: ", tagName);
+
+      if (tagName && tagName !== "最新の投稿") {
+        query.where =
+          tagName === "フォロー中"
+            ? {
+                ...query.where,
+                author: {
+                  OR: [
+                    {
+                      followers: {
+                        some: {
+                          followerId: userId,
+                        },
+                      },
+                    },
+                    {
+                      id: userId,
+                    },
+                  ],
+                },
+              }
+            : {
+                ...query.where,
+                tags: {
+                  some: {
+                    tag: {
+                      name: tagName,
+                    },
+                  },
+                },
+              };
+      }
+
       // postsを取得
       const posts = await prisma.post.findMany({
         ...getPostParams(userId),
@@ -153,6 +186,15 @@ app.get(
       if ("replied_ref" in query.where) {
         delete query.where.replied_ref;
       }
+
+      if ("tags" in query.where) {
+        delete query.where.tags;
+      }
+
+      if ("author" in query.where) {
+        delete query.where.author;
+      }
+
       if ("AND" in query.where && targetPost) {
         query.where = {
           created_at: before
@@ -160,6 +202,44 @@ app.get(
             : { gt: targetPost.created_at },
         };
       }
+
+      if (tagName && tagName !== "最新の投稿") {
+        query.where =
+          tagName === "フォロー中"
+            ? {
+                ...query.where,
+                post: {
+                  author: {
+                    OR: [
+                      {
+                        followers: {
+                          some: {
+                            followerId: userId,
+                          },
+                        },
+                      },
+                      {
+                        id: userId,
+                      },
+                    ],
+                  },
+                },
+              }
+            : {
+                ...query.where,
+                post: {
+                  tags: {
+                    some: {
+                      tag: {
+                        name: tagName,
+                      },
+                    },
+                  },
+                },
+              };
+      }
+
+      console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({
         select: {

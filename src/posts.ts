@@ -1,15 +1,13 @@
 import { zValidator } from "@hono/zod-validator";
 import { PrismaClient } from "@prisma/client";
-import { Prisma } from "@prisma/client";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 
-import { getUserIdFromCookie, uploadBlobData } from "./utils.js";
+import { getUserIdFromCookie, uploadImages } from "./utils.js";
 import { IMAGE_MIME_TYPE } from "../@types/index.js";
 import { NOTIFICATION_TYPES } from "../constants/notifications.js";
-import { connect } from "http2";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -393,25 +391,6 @@ app.post(
       : [];
     const content: string = formData.content;
     const files = formData.files;
-
-    async function uploadImages(files: Array<File>): Promise<string[]> {
-      const blobNames: (string | null)[] = await Promise.all(
-        files.map(async (file) => {
-          if (!(file instanceof File)) return null;
-          return await uploadBlobData({
-            targetContainer: "post",
-            file,
-          });
-        })
-      );
-
-      if (blobNames.includes(null)) {
-        throw new Error("Failed to upload image");
-      }
-
-      return blobNames as string[];
-    }
-
     const images = files ? [files].flat() : [];
 
     if (!images.every((file) => file instanceof File)) {

@@ -121,6 +121,24 @@ export async function deleteBlobByName({
   }
 }
 
+export async function uploadImages(files: Array<File>): Promise<string[]> {
+  const blobNames: (string | null)[] = await Promise.all(
+    files.map(async (file) => {
+      if (!(file instanceof File)) return null;
+      return await uploadBlobData({
+        targetContainer: "post",
+        file,
+      });
+    })
+  );
+
+  if (blobNames.includes(null)) {
+    throw new Error("Failed to upload image");
+  }
+
+  return blobNames as string[];
+}
+
 export async function uploadBlobData({
   targetContainer,
   file,

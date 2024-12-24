@@ -44,6 +44,14 @@ app.get("/items", isAuthenticated, async (c) => {
                     username: true,
                     nickname: true,
                     icon_link: true,
+                    followers: {
+                      where: {
+                        followerId: userId,
+                      },
+                      select: {
+                        followerId: true,
+                      },
+                    },
                   },
                 },
                 content: true,
@@ -146,5 +154,21 @@ app.delete(
     }
   }
 );
+
+// MARK: カートを空にする
+app.delete("/items/clear", isAuthenticated, async (c) => {
+  const userId: string = c.get("jwtPayload").sub;
+
+  try {
+    await prisma.cartItem.deleteMany({
+      where: {
+        userId,
+      },
+    });
+    return c.json({ success: true, data: {}, length: 0 }, 200);
+  } catch (e) {
+    return c.json({ success: false, error: "Failed to empty the cart" }, 400);
+  }
+});
 
 export default app;

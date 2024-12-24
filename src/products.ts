@@ -22,6 +22,11 @@ const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
 const MAX_IMAGE_COUNT: number = 4;
 
 // MARK: スキーマ定義
+// 商品評価POSTのスキーマ
+const ratingProductSchema = z.object({
+  value: z.number().min(1).max(5),
+});
+
 // 商品作成POSTのスキーマ
 const productCreateSchema = z.object({
   name: z.string().min(1),
@@ -140,6 +145,55 @@ app.get("/:id", async (c) => {
     );
   }
 });
+
+// MARK: 商品の評価
+app.post(
+  "/:id/rating",
+  isAuthenticated,
+  zValidator("json", ratingProductSchema, (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((issue) => issue.message),
+        },
+        400
+      );
+    }
+  }),
+  async (c) => {
+    const userId: string = c.get("jwtPayload").sub;
+    const id: string = c.req.param("id");
+    const { value }: { value: number } = c.req.valid("json");
+
+    try {
+      const purchases = await prisma.purchase.findMany({
+        where: { userId, productId: id },
+      });
+
+      if (purchases.length === 0) {
+        return c.json(
+          { success: false, error: "You must purchase the product first" },
+          403
+        );
+      }
+
+      const rating = await prisma.productRating.upsert({
+        where: { productId_userId: { productId: id, userId } },
+        create: { productId: id, userId, value: value },
+        update: { value: value },
+      });
+
+      return c.json({ success: true, data: rating }, 200);
+    } catch (e) {
+      console.log(e);
+      return c.json(
+        { success: false, error: "Failed to rate the product" },
+        400
+      );
+    }
+  }
+);
 
 // MARK: 商品作成
 app.post(

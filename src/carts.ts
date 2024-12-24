@@ -44,6 +44,14 @@ app.get("/items", isAuthenticated, async (c) => {
                     username: true,
                     nickname: true,
                     icon_link: true,
+                    followers: {
+                      where: {
+                        followerId: userId,
+                      },
+                      select: {
+                        followerId: true,
+                      },
+                    },
                   },
                 },
                 content: true,

@@ -37,6 +37,7 @@ model User {
   received_notification Notification[] @relation("asRecepient")
   licensed_downloads LicensedDownload[]
   refresh_token      RefreshToken?
+  product_ratings    ProductRating[]
 
   @@map("users")
 }
@@ -91,6 +92,7 @@ model Product {
   cart_items     CartItem[]
   postId         String     @unique
   Purchase       Purchase[]
+  product_ratings ProductRating[]
 
   @@map("products")
 }
@@ -169,6 +171,20 @@ model Purchase {
   userId         String
 
   @@map("purchases")
+}
+
+// MARK: Model ProductRating
+model ProductRating {
+  id        String @id @unique @default(cuid())
+  value     Int
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  userId    String
+
+  @@map("product_ratings")
 }
 
 // MARK: Model Follow

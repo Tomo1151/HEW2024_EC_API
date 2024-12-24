@@ -14,6 +14,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// MARK: Model User
 model User {
   id                 String             @id @unique @default(cuid())
   username           String             @unique
@@ -40,6 +41,7 @@ model User {
   @@map("users")
 }
 
+// MARK: Model Post
 model Post {
   id            String         @id @unique @default(cuid())
   content       String
@@ -64,6 +66,7 @@ model Post {
   @@map("posts")
 }
 
+// MARK: Model PostImage
 model PostImage {
   id         String @id @unique @default(cuid())
   image_link String @unique
@@ -73,6 +76,7 @@ model PostImage {
   @@map("post_images")
 }
 
+// MARK: Model Product
 model Product {
   id             String     @id @unique @default(cuid())
   name           String
@@ -91,6 +95,7 @@ model Product {
   @@map("products")
 }
 
+// MARK: Model Repost
 model Repost {
   id         String   @id @unique @default(cuid())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -103,6 +108,7 @@ model Repost {
   @@map("reposts")
 }
 
+// MARK: Model Like
 model Like {
   id     String @id @unique @default(cuid())
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -114,6 +120,7 @@ model Like {
   @@map("likes")
 }
 
+// MARK: Model Tag
 model Tag {
   id           String       @id @unique @default(cuid())
   name         String       @unique
@@ -124,6 +131,7 @@ model Tag {
   @@map("tags")
 }
 
+// MARK: Model TaggedPost
 model TaggedPost {
   id     String @id @unique @default(cuid())
   tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
@@ -135,6 +143,7 @@ model TaggedPost {
   @@map("tagged_posts")
 }
 
+// MARK: Model CartItem
 model CartItem {
   id         String   @id @unique @default(cuid())
   amount     Int
@@ -148,6 +157,7 @@ model CartItem {
   @@map("cart_items")
 }
 
+// MARK: Model Purchase
 model Purchase {
   id             String   @id @unique @default(cuid())
   purchase_price Int
@@ -161,6 +171,7 @@ model Purchase {
   @@map("purchases")
 }
 
+// MARK: Model Follow
 model Follow {
   id         String @id @unique @default(cuid())
   follower   User   @relation("asFollower", fields: [followerId], references: [id], onDelete: Cascade)
@@ -172,6 +183,7 @@ model Follow {
   @@map("follows")
 }
 
+// MARK: Model License
 model License {
   id                 String             @id @unique @default(cuid())
   license_key        String             @unique
@@ -183,6 +195,7 @@ model License {
   @@map("licenses")
 }
 
+// MARK: Model LicensedDownload
 model LicensedDownload {
   id        String  @id @unique @default(cuid())
   license   License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
@@ -194,6 +207,7 @@ model LicensedDownload {
   @@map("licensed_downloads")
 }
 
+// MARK: Model RefreshToken
 model RefreshToken {
   id         String   @id @unique @default(cuid())
   token      String   @unique
@@ -204,6 +218,7 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+// MARK: Model Notification
 model Notification {
   id                 String             @id @unique @default(cuid())
   // type 0: follow, 1: like, 2: repost, 3: comment, 4: purchase, 5: license

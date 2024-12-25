@@ -50,43 +50,47 @@ app.get(
         ? await prisma.user.findUnique({ where: { id: before } })
         : await prisma.post.findUnique({ where: { id: before } });
 
-    const whereQuery = {
-      AND: searchWords.map((word) => ({
-        OR: [
-          ...(type === "posts"
-            ? [
-                { content: { contains: word } },
-                // { tags: { some: { tag: { name: { contains: word } } } } },
-                { product: { name: { contains: word } } },
-              ]
-            : []),
-          ...(tag === "true"
-            ? [
-                {
-                  tags: {
-                    some: {
-                      tag: { name: { contains: word } },
+    const whereQuery =
+      tag === "true"
+        ? {
+            AND: searchWords.map((word) => ({
+              tags: {
+                some: {
+                  tag: {
+                    name: {
+                      contains: word,
                     },
                   },
                 },
-              ]
-            : []),
-          ...(type === "products"
-            ? [
-                {
-                  content: { contains: word },
-                  // tags: { some: { tag: { name: { contains: word } } } },
-                },
-                {
-                  product: {
-                    OR: [{ name: { contains: word } }],
-                  },
-                },
-              ]
-            : []),
-        ],
-      })),
-    };
+              },
+            })),
+          }
+        : {
+            AND: searchWords.map((word) => ({
+              OR: [
+                ...(type === "posts"
+                  ? [
+                      { content: { contains: word } },
+                      // { tags: { some: { tag: { name: { contains: word } } } } },
+                      { product: { name: { contains: word } } },
+                    ]
+                  : []),
+                ...(type === "products"
+                  ? [
+                      {
+                        content: { contains: word },
+                        // tags: { some: { tag: { name: { contains: word } } } },
+                      },
+                      {
+                        product: {
+                          OR: [{ name: { contains: word } }],
+                        },
+                      },
+                    ]
+                  : []),
+              ],
+            })),
+          };
 
     try {
       if (type === "users") {

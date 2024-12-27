@@ -232,9 +232,9 @@ app.post(
         "tags[]": string[];
       } = await c.req.parseBody({ all: true });
 
-      // タグの前後の空白を削除して小文字に変換，1次元の配列に変換
+      // タグの前後の空白を削除して1次元の配列に変換
       const tagNames: string[] = tags
-        ? [tags].flat().map((tag) => tag.trim().toLowerCase())
+        ? [tags].flat().map((tag) => tag.trim())
         : [];
 
       //  画像ファイルの配列に変換

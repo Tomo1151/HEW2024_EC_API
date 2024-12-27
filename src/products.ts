@@ -232,9 +232,10 @@ app.post(
         "tags[]": string[];
       } = await c.req.parseBody({ all: true });
 
-      // タグの前後の空白を削除して小文字に変換，1次元の配列に変換
+      // @TODO できれば大文字小文字を区別したい (MySQL && prismaがcollationをサポートしていないため見送り)
+      // タグの前後の空白を削除して1次元の配列に変換
       const tagNames: string[] = tags
-        ? [tags].flat().map((tag) => tag.trim().toLowerCase())
+        ? [...new Set([tags].flat().map((tag) => tag.trim().toUpperCase()))]
         : [];
 
       //  画像ファイルの配列に変換

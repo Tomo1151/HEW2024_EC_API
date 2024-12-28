@@ -15,6 +15,10 @@ const app: Hono = new Hono();
 const prisma = new PrismaClient();
 
 // MARK: スキーマ定義
+const profileTimelineSchema = z.object({
+  before: z.string(),
+});
+
 // ユーザーの編集PUTのスキーマ
 const userUpdateSchema = z
   .object({
@@ -169,86 +173,208 @@ app.put(
 );
 
 // MARK: usernameのユーザーが作成した投稿を取得
-app.get("/:username/posts", async (c) => {
-  let posts;
-  try {
+app.get(
+  "/:username/posts",
+  zValidator("query", profileTimelineSchema, (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error,
+          data: [],
+        },
+        400
+      );
+    }
+  }),
+  async (c) => {
     const username: string = c.req.param("username");
     const userId: string = await getUserIdFromCookie(c);
+    const before: string = c.req.valid("query").before;
 
-    posts = await prisma.post.findMany({
-      where: { AND: [{ author: { username } }, { replied_ref: null }] },
-      orderBy: {
-        created_at: "desc",
-      },
-      ...getPostParams(userId),
-    });
-  } catch (e) {
-    console.log(e);
-    return c.json({ success: false, error: "User not found", data: [] }, 404);
+    try {
+      let targetPost;
+      if (before) {
+        targetPost = await prisma.post.findUniqueOrThrow({
+          where: { id: before },
+          select: { created_at: true },
+        });
+      }
+
+      const where = targetPost
+        ? {
+            AND: [
+              { author: { username } },
+              { replied_ref: null },
+              { created_at: { lt: targetPost.created_at } },
+            ],
+          }
+        : {
+            AND: [{ author: { username } }, { replied_ref: null }],
+          };
+
+      const posts = await prisma.post.findMany({
+        where: {
+          ...where,
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+        take: 10,
+        ...getPostParams(userId),
+      });
+
+      console.log(posts);
+      return c.json(
+        { success: true, data: posts.toReversed(), length: posts.length },
+        200
+      );
+    } catch (e) {
+      console.log(e);
+      return c.json(
+        { success: false, error: "User posts not found", data: [] },
+        404
+      );
+    }
   }
-  return c.json({ success: true, data: posts, length: posts.length }, 200);
-});
+);
 
 // MARK: usernameのユーザーの出品を取得
-app.get("/:username/products", async (c) => {
-  let posts;
-  try {
+app.get(
+  "/:username/products",
+  zValidator("query", profileTimelineSchema, (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error,
+          data: [],
+        },
+        400
+      );
+    }
+  }),
+  async (c) => {
     const username: string = c.req.param("username");
     const userId: string = await getUserIdFromCookie(c);
+    const before: string = c.req.valid("query").before;
 
-    posts = await prisma.post.findMany({
-      where: {
-        AND: [{ author: { username } }, { replied_ref: null }],
-        NOT: { product: null },
-      },
-      orderBy: {
-        created_at: "desc",
-      },
-      ...getPostParams(userId),
-    });
-  } catch (e) {
-    console.log(e);
-    return c.json({ success: false, error: "User not found", data: [] }, 404);
+    try {
+      let targetPost;
+      if (before) {
+        targetPost = await prisma.post.findUniqueOrThrow({
+          where: { id: before },
+          select: { created_at: true },
+        });
+      }
+      const posts = await prisma.post.findMany({
+        where: {
+          AND: [
+            { author: { username } },
+            { replied_ref: null },
+            targetPost
+              ? {
+                  created_at: { lt: targetPost.created_at },
+                }
+              : {},
+          ],
+          NOT: { product: null },
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+        take: 10,
+        ...getPostParams(userId),
+      });
+      return c.json(
+        { success: true, data: posts.toReversed(), length: posts.length },
+        200
+      );
+    } catch (e) {
+      console.log(e);
+      return c.json(
+        { success: false, error: "User products not found", data: [] },
+        404
+      );
+    }
   }
-  return c.json({ success: true, data: posts, length: posts.length }, 200);
-});
+);
 
 // MARK: usernameのユーザーのいいねを取得
-app.get("/:username/likes", async (c) => {
-  let posts;
-  try {
+app.get(
+  "/:username/likes",
+  zValidator("query", profileTimelineSchema, (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error,
+          data: [],
+        },
+        400
+      );
+    }
+  }),
+  async (c) => {
     const username: string = c.req.param("username");
     const userId: string = await getUserIdFromCookie(c);
-
-    const { id }: { id: string } = await prisma.user.findUniqueOrThrow({
-      where: { username },
-      select: { id: true },
-    });
-
-    posts = await prisma.post.findMany({
-      where: {
-        AND: [
-          {
+    const before: string = c.req.valid("query").before;
+    try {
+      let targetPost;
+      if (before) {
+        targetPost = await prisma.post.findUniqueOrThrow({
+          where: { id: before },
+          select: {
+            created_at: true,
             likes: {
-              some: {
-                userId: id,
+              select: {
+                created_at: true,
               },
             },
           },
-          { replied_ref: null },
-        ],
-      },
-      orderBy: {
-        created_at: "desc",
-      },
-      ...getPostParams(userId),
-    });
-  } catch (e) {
-    console.log(e);
-    return c.json({ success: false, error: "User not found", data: [] }, 404);
+        });
+      }
+
+      const { id }: { id: string } = await prisma.user.findUniqueOrThrow({
+        where: { username },
+        select: { id: true },
+      });
+
+      const likes = await prisma.like.findMany({
+        where: {
+          AND: [
+            {
+              userId: id,
+              created_at: targetPost
+                ? { lt: targetPost.likes[0].created_at }
+                : {},
+            },
+          ],
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+        select: {
+          post: getPostParams(userId),
+        },
+        take: 10,
+      });
+
+      const posts = likes.map((like) => like.post);
+
+      return c.json(
+        { success: true, data: posts.toReversed(), length: posts.length },
+        200
+      );
+    } catch (e) {
+      console.log(e);
+      return c.json(
+        { success: false, error: "User likes not found", data: [] },
+        404
+      );
+    }
   }
-  return c.json({ success: true, data: posts, length: posts.length }, 200);
-});
+);
 
 // MARK: ユーザーを削除
 app.delete("/:username", isAuthenticated, async (c) => {

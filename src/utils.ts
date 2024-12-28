@@ -44,6 +44,7 @@ const CONTAINER_NAME: { icon: string; post: string; product: string } = {
   product: PRODUCT_DATA_CONTAINER_NAME,
 };
 
+// MARK: CookieからユーザーIDを取得
 export async function getUserIdFromCookie(c: Context): Promise<string> {
   if (!(process.env.ACCESS_TOKEN_NAME && process.env.REFRESH_TOKEN_NAME)) {
     throw new Error("JWT cookie name isn't defined");
@@ -68,6 +69,7 @@ export async function getUserIdFromCookie(c: Context): Promise<string> {
   }
 }
 
+// MARK: 通知を送信
 export async function sendNotification(
   notification: Notification
 ): Promise<void> {
@@ -76,6 +78,7 @@ export async function sendNotification(
   });
 }
 
+// MARK: Blobを削除
 export async function deleteBlobByName({
   targetContainer,
   blobName,
@@ -121,6 +124,7 @@ export async function deleteBlobByName({
   }
 }
 
+// MARK: 画像をアップロード
 export async function uploadImages(files: Array<File>): Promise<string[]> {
   const blobNames: (string | null)[] = await Promise.all(
     files.map(async (file) => {
@@ -139,6 +143,7 @@ export async function uploadImages(files: Array<File>): Promise<string[]> {
   return blobNames as string[];
 }
 
+// MARK: Blobデータをアップロード
 export async function uploadBlobData({
   targetContainer,
   file,
@@ -180,6 +185,7 @@ export async function uploadBlobData({
   return blobName;
 }
 
+// MARK: Blobデータをダウンロード
 export async function downloadBlobByName({
   targetContainer,
   blobName,

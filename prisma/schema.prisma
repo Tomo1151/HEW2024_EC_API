@@ -115,6 +115,7 @@ model Like {
   id     String @id @unique @default(cuid())
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  created_at   DateTime     @default(now())
   userId String
   postId String
 

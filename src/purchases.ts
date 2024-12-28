@@ -75,12 +75,18 @@ app.post(
 
           purchases.push(purchase);
 
-          sendNotification({
-            type: NOTIFICATION_TYPES.PURCHASE,
-            senderId: userId,
-            recepientId: product.post.author.id,
-            relPostId: product.post.id,
-          });
+          try {
+            // @TODO 同じ人が同じ商品を購入したときに発生するUNIQUE制約違反を直す
+            await sendNotification({
+              type: NOTIFICATION_TYPES.PURCHASE,
+              senderId: userId,
+              recepientId: product.post.author.id,
+              relPostId: product.post.id,
+            });
+          } catch (e) {
+            // console.error(e);
+            console.error("Failed to send notification");
+          }
         }
 
         return purchases;

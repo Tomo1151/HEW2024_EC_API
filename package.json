@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec \"node --env-file=.env --loader ts-node/esm  src/index.ts\"",
-    "build": "cat package.json;npm list --depth=0; tsc",
+    "build": "cat package.json;npm list --depth=0; tsc; npx prisma generate",
     "start": "node dist/src/index.js"
   },
   "dependencies": {

@@ -243,6 +243,46 @@ app.post("/refresh", async (c) => {
       return c.json({ success: false, error: "User not found" }, 404);
     }
 
+    const refreshTokenRecord = await prisma.refreshToken.findUnique({
+      where: {
+        userId: user.id,
+      },
+    });
+
+    if (!refreshTokenRecord) {
+      deleteCookie(c, REFRESH_TOKEN, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "Strict",
+        secure: true,
+      });
+      return c.json({ success: false, error: "Invalid refresh token" }, 401);
+    } // リフレッシュトークンの有効期限が切れていたらエラー
+    const { exp } = await verify(
+      refreshTokenRecord.token,
+      process.env.JWT_REFRESH
+    );
+
+    if (!exp || exp < Math.round(Date.now() / 1000)) {
+      deleteCookie(c, REFRESH_TOKEN, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "Strict",
+        secure: true,
+      });
+      return c.json({ success: false, error: "Refresh token expired" }, 401);
+    }
+
+    if (refreshTokenRecord.token !== refreshToken) {
+      deleteCookie(c, REFRESH_TOKEN, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "Strict",
+        secure: true,
+      });
+      return c.json({ success: false, error: "Invalid refresh token" }, 401);
+    }
+
     // 新しいセッションのJWTを生成，付与
     const sessionPayload = {
       sub: user.id,

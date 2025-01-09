@@ -40,7 +40,14 @@ app.post(
 
     try {
       const purchases = await prisma.$transaction(async (prisma) => {
-        const purchases = [];
+        const purchases: {
+          id: string;
+          purchase_price: number;
+          created_at: Date;
+          updated_at: Date;
+          productId: string;
+          userId: string;
+        }[] = [];
         const products = await prisma.product.findMany({
           where: {
             id: {

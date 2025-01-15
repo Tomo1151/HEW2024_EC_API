@@ -77,6 +77,17 @@ model PostImage {
   @@map("post_images")
 }
 
+model DailyPostImpression {
+  id         String   @id @unique @default(cuid())
+  postId     String   @unique
+  impression Int      @default(0)
+  dateKey    String   @unique // yyyy-mm-dd
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@map("daily_post_impressions")
+}
+
 // MARK: Model Product
 model Product {
   id             String     @id @unique @default(cuid())

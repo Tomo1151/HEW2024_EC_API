@@ -103,6 +103,7 @@ app.get(
                 { bio: { contains: word } },
               ],
             })),
+            is_active: true,
             created_at: target
               ? {
                   lt: target.created_at,

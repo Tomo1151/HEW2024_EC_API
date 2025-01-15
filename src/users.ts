@@ -70,7 +70,7 @@ app.get("/:username", async (c) => {
   try {
     const username = c.req.param("username");
     user = await prisma.user.findUniqueOrThrow({
-      where: { username },
+      where: { username, is_active: true },
       select: {
         username: true,
         nickname: true,
@@ -121,12 +121,12 @@ app.put(
 
     const username = c.req.param("username");
     const { nickname, bio, homepage_link, icon } = c.req.valid("form");
-    console.log({ nickname, bio, homepage_link, icon });
+    // console.log({ nickname, bio, homepage_link, icon });
 
     try {
       // リクエストユーザーが編集しようとしているユーザーか確認
       const reqUser = await prisma.user.findUniqueOrThrow({
-        where: { id: userId },
+        where: { id: userId, is_active: true },
         select: { username: true, icon_link: true },
       });
 
@@ -193,6 +193,15 @@ app.get(
     const before: string = c.req.valid("query").before;
 
     try {
+      if (
+        !(await prisma.user.findFirst({ where: { username, is_active: true } }))
+      ) {
+        return c.json(
+          { success: false, error: "User not found", data: null },
+          404
+        );
+      }
+
       let targetPost;
       if (before) {
         targetPost = await prisma.post.findUniqueOrThrow({
@@ -260,6 +269,15 @@ app.get(
     const before: string = c.req.valid("query").before;
 
     try {
+      if (
+        !(await prisma.user.findFirst({ where: { username, is_active: true } }))
+      ) {
+        return c.json(
+          { success: false, error: "User not found", data: null },
+          404
+        );
+      }
+
       let targetPost;
       if (before) {
         targetPost = await prisma.post.findUniqueOrThrow({
@@ -320,6 +338,15 @@ app.get(
     const userId: string = await getUserIdFromCookie(c);
     const before: string = c.req.valid("query").before;
     try {
+      if (
+        !(await prisma.user.findFirst({ where: { username, is_active: true } }))
+      ) {
+        return c.json(
+          { success: false, error: "User not found", data: null },
+          404
+        );
+      }
+
       let targetPost;
       if (before) {
         targetPost = await prisma.post.findUniqueOrThrow({

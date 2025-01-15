@@ -68,7 +68,7 @@ app.post(
       return c.json({ success: false, error: "Internal server error" }, 500);
     }
 
-    if (!user) {
+    if (!user || !user.is_active) {
       return c.json(
         { success: false, error: "Invalid email or password" },
         401

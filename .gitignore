@@ -132,8 +132,6 @@ out
 .yarn/install-state.gz
 .pnp.*
 
-# Prisma migration
-prisma/migrations/
 
 dist/
 static/

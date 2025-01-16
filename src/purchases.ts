@@ -37,10 +37,20 @@ app.post(
   async (c) => {
     const userId: string = c.get("jwtPayload").sub;
     const { productIds }: { productIds: string[] } = c.req.valid("json");
-
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${
+      now.getMonth() + 1
+    }-${now.getDate()}`;
     try {
       const purchases = await prisma.$transaction(async (prisma) => {
-        const purchases = [];
+        const purchases: {
+          id: string;
+          purchase_price: number;
+          created_at: Date;
+          updated_at: Date;
+          productId: string;
+          userId: string;
+        }[] = [];
         const products = await prisma.product.findMany({
           where: {
             id: {
@@ -70,6 +80,7 @@ app.post(
               userId,
               purchase_price: product.price,
               productId: product.id,
+              dateKey: dateStr,
             },
           });
 

@@ -128,6 +128,8 @@ app.get("/:username/followers", async (c) => {
 app.post("/:username/follow", isAuthenticated, async (c) => {
   const reqUsername: string = c.req.param("username");
   const userId: string = c.get("jwtPayload").sub;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
 
   try {
     // userテーブルからidを取得
@@ -150,6 +152,7 @@ app.post("/:username/follow", isAuthenticated, async (c) => {
       data: {
         followerId: userId,
         followeeId: reqUser.id,
+        dateKey: dateStr,
       },
     });
 

@@ -44,6 +44,30 @@ const CONTAINER_NAME: { icon: string; post: string; product: string } = {
   product: PRODUCT_DATA_CONTAINER_NAME,
 };
 
+export async function updatePostImpressionCount(postId: string): Promise<void> {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+
+  await prisma.dailyPostImpression.upsert({
+    where: {
+      postId_dateKey: {
+        postId: postId,
+        dateKey: dateStr,
+      },
+    },
+    create: {
+      postId: postId,
+      dateKey: dateStr,
+      impression: 1,
+    },
+    update: {
+      impression: {
+        increment: 1,
+      },
+    },
+  });
+}
+
 // MARK: CookieからユーザーIDを取得
 export async function getUserIdFromCookie(c: Context): Promise<string> {
   if (!(process.env.ACCESS_TOKEN_NAME && process.env.REFRESH_TOKEN_NAME)) {

@@ -22,6 +22,7 @@ import reposts from "./reposts.js";
 import replies from "./replies.js";
 import follows from "./follows.js";
 import notifications from "./notifications.js";
+import stats from "./stats.js";
 
 // const packageJson: { version: string } = require("../package.json");
 // const API_VERSION: string = packageJson.version;
@@ -71,6 +72,7 @@ app.route("/tags", tags);
 app.route("/", likes);
 app.route("/users", follows);
 app.route("/notifications", notifications);
+app.route("/stats", stats);
 
 app.get("/", (c) => {
   return c.text("Hello Hono! 🔥");

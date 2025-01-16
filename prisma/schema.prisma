@@ -78,13 +78,13 @@ model PostImage {
 }
 
 model DailyPostImpression {
-  id         String   @id @unique @default(cuid())
-  postId     String   @unique
+  postId     String
   impression Int      @default(0)
-  dateKey    String   @unique // yyyy-mm-dd
+  dateKey    String   // yyyy-mm-dd
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
+  @@id([postId, dateKey])
   @@map("daily_post_impressions")
 }
 
@@ -175,6 +175,7 @@ model CartItem {
 model Purchase {
   id             String   @id @unique @default(cuid())
   purchase_price Int
+  dateKey    String   // yyyy-mm-dd
   created_at     DateTime @default(now())
   updated_at     DateTime @default(now()) @updatedAt
   product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -205,7 +206,8 @@ model Follow {
   id         String @id @unique @default(cuid())
   follower   User   @relation("asFollower", fields: [followerId], references: [id], onDelete: Cascade)
   followee   User   @relation("asFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
-  created_at   DateTime     @default(now())
+  dateKey    String   // yyyy-mm-dd
+  created_at DateTime @default(now())
   followerId String
   followeeId String
 

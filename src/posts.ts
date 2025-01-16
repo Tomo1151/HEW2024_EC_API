@@ -5,7 +5,11 @@ import { z } from "zod";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 
-import { getUserIdFromCookie, uploadImages } from "./utils.js";
+import {
+  getUserIdFromCookie,
+  updatePostImpressionCount,
+  uploadImages,
+} from "./utils.js";
 import { IMAGE_MIME_TYPE } from "../@types/index.js";
 import { NOTIFICATION_TYPES } from "../constants/notifications.js";
 import { getPostParams } from "./queries.js";
@@ -285,6 +289,16 @@ app.get(
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .slice(0, 10);
 
+      for (const post of timeline) {
+        const postId =
+          post.type === "repost" && "postId" in post ? post.postId : post.id;
+        try {
+          await updatePostImpressionCount(postId);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
       return c.json(
         {
           success: true,
@@ -315,6 +329,7 @@ app.get("/:id", async (c) => {
       },
       ...getPostParams(userId),
     });
+    await updatePostImpressionCount(post.id);
     return c.json({ success: true, data: post }, 200);
   } catch {
     return c.json({ success: false, error: "Failed to fetch post" }, 404);

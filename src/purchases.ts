@@ -37,7 +37,10 @@ app.post(
   async (c) => {
     const userId: string = c.get("jwtPayload").sub;
     const { productIds }: { productIds: string[] } = c.req.valid("json");
-
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${
+      now.getMonth() + 1
+    }-${now.getDate()}`;
     try {
       const purchases = await prisma.$transaction(async (prisma) => {
         const purchases: {
@@ -77,6 +80,7 @@ app.post(
               userId,
               purchase_price: product.price,
               productId: product.id,
+              dateKey: dateStr,
             },
           });
 

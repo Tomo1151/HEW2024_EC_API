@@ -23,6 +23,7 @@ import replies from "./replies.js";
 import follows from "./follows.js";
 import notifications from "./notifications.js";
 import stats from "./stats.js";
+import { isAllowedOrigin } from "./middlewares/isAllowedOrigin.js";
 
 // const packageJson: { version: string } = require("../package.json");
 // const API_VERSION: string = packageJson.version;
@@ -54,6 +55,7 @@ app.use(
   })
 );
 
+app.use("*", isAllowedOrigin);
 app.use(trimTrailingSlash());
 
 app.use(logger());

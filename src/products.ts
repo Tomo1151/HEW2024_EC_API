@@ -6,7 +6,12 @@ import { zValidator } from "@hono/zod-validator";
 import { IMAGE_MIME_TYPE } from "../@types";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
-import { deleteBlobByName, uploadBlobData, uploadImages } from "./utils.js";
+import {
+  deleteBlobByName,
+  generateBlobSASUrl,
+  uploadBlobData,
+  uploadImages,
+} from "./utils.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -399,6 +404,30 @@ app.delete("/:id", isAuthenticated, async (c) => {
       { success: false, error: "Failed to delete the product" },
       500
     );
+  }
+});
+
+app.get("/:id/download", async (c) => {
+  const id: string = c.req.param("id");
+  try {
+    const product = await prisma.product.findUniqueOrThrow({
+      where: { id },
+      select: {
+        product_link: true,
+      },
+    });
+    if (!product.product_link) {
+      return c.json({ success: false, error: "Product not found" });
+    }
+
+    const sasUrl = await generateBlobSASUrl({
+      targetContainer: "product",
+      blobName: product.product_link,
+    });
+    return c.json({ success: true, data: sasUrl });
+  } catch (e) {
+    console.log(e);
+    return c.json({ success: false, error: "Failed to download the product" });
   }
 });
 

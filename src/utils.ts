@@ -14,6 +14,8 @@ import {
   BlockBlobUploadResponse,
   ContainerClient,
   StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
 } from "@azure/storage-blob";
 
 import { BlobContainerName } from "../@types";
@@ -100,6 +102,54 @@ export async function sendNotification(
   await prisma.notification.create({
     data: notification,
   });
+}
+
+// MARK: BlobのSASURLを生成
+export async function generateBlobSASUrl({
+  targetContainer,
+  blobName,
+}: {
+  targetContainer: BlobContainerName;
+  blobName: string;
+}): Promise<{ url: string; blobName: string; blobSize: number }> {
+  const SAS_EXPIRATION_DATE = new Date(Date.now() + 1000 * 10);
+  // const SAS_EXPIRATION_DATE = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
+
+  const sharedKeyCredential: StorageSharedKeyCredential =
+    new StorageSharedKeyCredential(ACCOUNT_NAME, ACCOUNT_KEY);
+
+  const blobServiceClient: BlobServiceClient = new BlobServiceClient(
+    `https://${ACCOUNT_NAME}.blob.core.windows.net`,
+    sharedKeyCredential
+  );
+
+  const SAS_TOKEN = generateBlobSASQueryParameters(
+    {
+      containerName: CONTAINER_NAME[targetContainer],
+      blobName: blobName,
+      permissions: BlobSASPermissions.parse("r"),
+      startsOn: new Date(),
+      expiresOn: SAS_EXPIRATION_DATE,
+    },
+    sharedKeyCredential
+  ).toString();
+
+  const containerClient: ContainerClient = blobServiceClient.getContainerClient(
+    CONTAINER_NAME[targetContainer]
+  );
+
+  const blobClient: BlockBlobClient =
+    containerClient.getBlockBlobClient(blobName);
+
+  const blobSize = await blobClient.getProperties();
+
+  const SAS_URL = blobClient.url + "?" + SAS_TOKEN;
+
+  return {
+    url: SAS_URL,
+    blobName,
+    blobSize: blobSize.contentLength ?? 0,
+  };
 }
 
 // MARK: Blobを削除

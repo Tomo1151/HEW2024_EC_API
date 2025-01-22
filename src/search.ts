@@ -138,6 +138,13 @@ app.get(
         const posts = await prisma.post.findMany({
           where: {
             ...whereQuery,
+            ...(type === "products"
+              ? {
+                  product: {
+                    isNot: null,
+                  },
+                }
+              : {}),
             replied_ref: null,
             created_at: target
               ? {

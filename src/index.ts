@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
 import { getRouterName, showRoutes } from "hono/dev";
+import { except } from "hono/combine";
 
 import { trimTrailingSlash } from "hono/trailing-slash";
 
@@ -55,7 +56,7 @@ app.use(
   })
 );
 
-app.use("*", isAllowedOrigin);
+app.use("*", except("/media/*", isAllowedOrigin));
 app.use(trimTrailingSlash());
 
 app.use(logger());

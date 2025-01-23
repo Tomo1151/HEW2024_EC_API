@@ -276,7 +276,7 @@ app.post(
         const priceNum: number = parseInt(price);
         if (isNaN(priceNum)) {
           return c.json(
-            { success: false, error: "価格は有効な数値でなければなりません" },
+            { success: false, error: ["価格は有効な数値でなければなりません"] },
             400
           );
         }

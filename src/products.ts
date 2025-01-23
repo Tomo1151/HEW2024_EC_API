@@ -39,20 +39,20 @@ const productCreateSchema = z.object({
       if (!(arg instanceof File)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Data must be a file",
+          message: "商品データはファイルでなければなりません",
         });
       }
       return z.NEVER;
     })
     .refine((file) => file.size < 1024 * 1024 * 1024 * 5, {
-      message: "Data size must be less than 5GB",
+      message: "商品データのサイズは5MiBまでです",
     })
     .refine(
       (file) =>
         file.type === "application/zip" ||
         file.type === "application/x-zip-compressed",
       {
-        message: "Data must be a zip file",
+        message: "商品データの形式はZIPでなければなりません",
       }
     )
     .optional(),
@@ -67,7 +67,7 @@ const productCreateSchema = z.object({
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Images must be a file or a list of files",
+          message: "画像ファイルはファイルでなければなりません",
         });
       }
       return z.NEVER;
@@ -246,7 +246,7 @@ app.post(
         return c.json(
           {
             success: false,
-            error: ["Images must be a file or a list of files"],
+            error: ["画像ファイルはファイルでなければなりません"],
             data: null,
           },
           400
@@ -264,7 +264,7 @@ app.post(
           return c.json(
             {
               success: false,
-              error: ["Data must be a file"],
+              error: ["商品データはファイルでなければなりません"],
               data: null,
             },
             400
@@ -276,7 +276,7 @@ app.post(
         const priceNum: number = parseInt(price);
         if (isNaN(priceNum)) {
           return c.json(
-            { success: false, error: "Price must be a number" },
+            { success: false, error: "価格は有効な数値でなければなりません" },
             400
           );
         }

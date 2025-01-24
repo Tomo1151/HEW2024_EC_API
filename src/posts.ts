@@ -291,6 +291,15 @@ app.get(
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .slice(0, 10);
 
+      // post の product の price_histories の created_at で降順にソート，最新のもの以外を削除
+      for (const post of timeline) {
+        if (post.product) {
+          post.product.price_histories = post.product.price_histories
+            .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+            .slice(0, 1);
+        }
+      }
+
       for (const post of timeline) {
         const postId =
           post.type === "repost" && "postId" in post ? post.postId : post.id;

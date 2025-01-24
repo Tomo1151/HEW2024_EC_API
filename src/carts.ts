@@ -32,7 +32,16 @@ app.get("/items", isAuthenticated, async (c) => {
           select: {
             id: true,
             name: true,
-            price: true,
+            price_histories: {
+              orderBy: {
+                created_at: "desc",
+              },
+              take: 1,
+              select: {
+                id: true,
+                price: true,
+              },
+            },
             thumbnail_link: true,
             live_release: true,
             post: {

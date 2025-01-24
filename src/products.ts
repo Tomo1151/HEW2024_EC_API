@@ -140,6 +140,14 @@ app.get("/:id", async (c) => {
   try {
     const product = await prisma.product.findUniqueOrThrow({
       where: { id },
+      include: {
+        price_histories: {
+          orderBy: {
+            created_at: "desc",
+          },
+          take: 1,
+        },
+      },
     });
     return c.json({ success: true, data: product }, 200);
   } catch (e) {
@@ -310,10 +318,14 @@ app.post(
               product: {
                 create: {
                   name,
-                  price: priceNum,
                   product_link: data_url,
                   thumbnail_link: blobNames[0],
                   live_release: false,
+                  price_histories: {
+                    create: {
+                      price: priceNum,
+                    },
+                  },
                 },
               },
               tags: {

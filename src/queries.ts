@@ -23,9 +23,19 @@ export const getPostParams = (userId: string) => ({
       select: {
         id: true,
         name: true,
-        price: true,
         thumbnail_link: true,
         live_release: true,
+        price_histories: {
+          // orderBy: {
+          //   created_at: "desc",
+          // },
+          // take: 1,
+          select: {
+            id: true,
+            price: true,
+            created_at: true,
+          },
+        },
       },
     },
     images: {

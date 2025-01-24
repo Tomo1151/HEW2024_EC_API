@@ -21,10 +21,12 @@ const getPurchaseSchema = z.object({
 });
 
 // 購入POSTのスキーマ
-const purchaseSchema = z.object({
-  productIds: z.array(z.string()),
-});
-
+const purchaseSchema = z.array(
+  z.object({
+    productId: z.string(),
+    priceId: z.string(),
+  })
+);
 // MARK: 購入
 app.post(
   "/",
@@ -35,13 +37,18 @@ app.post(
     }
   }),
   async (c) => {
+    // 必要なデータの取得
     const userId: string = c.get("jwtPayload").sub;
-    const { productIds }: { productIds: string[] } = c.req.valid("json");
+    const requestProducts: Array<{ productId: string; priceId: string }> =
+      c.req.valid("json");
+
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${
       now.getMonth() + 1
     }-${now.getDate()}`;
+    console.log(userId, requestProducts);
     try {
+      // トランザクション処理
       const purchases = await prisma.$transaction(async (prisma) => {
         const purchases: {
           id: string;
@@ -51,10 +58,12 @@ app.post(
           productId: string;
           userId: string;
         }[] = [];
+
+        // 購入商品の取得
         const products = await prisma.product.findMany({
           where: {
             id: {
-              in: productIds,
+              in: requestProducts.map((product) => product.productId),
             },
           },
           include: {
@@ -67,18 +76,58 @@ app.post(
                 },
               },
             },
+            price_histories: {
+              orderBy: {
+                created_at: "desc",
+              },
+              select: {
+                id: true,
+                price: true,
+                productId: true,
+                created_at: true,
+              },
+            },
           },
         });
 
         for (const product of products) {
-          if (product.price === null) {
-            throw new Error("Product price cannot be null");
+          if (product.price_histories.length === 0) {
+            throw new Error("購入価格が不正です");
+          }
+
+          const priceId = requestProducts.find(
+            (p) => p.productId === product.id
+          )?.priceId;
+
+          if (!priceId) {
+            throw new Error("購入価格が不正です");
+          }
+
+          let price;
+          for (let i = 0; i < product.price_histories.length; i++) {
+            if (product.price_histories[i].id === priceId) {
+              // もしpriceIdが5分以上前かつ最新ではないのものだったらエラーを返す
+              if (
+                now.getTime() -
+                  product.price_histories[i].created_at.getTime() >
+                  5 * 60 * 1000 &&
+                i !== 0
+              ) {
+                throw new Error("その価格での購入はできません");
+              }
+              price = product.price_histories[i].price;
+              break;
+            }
+          }
+
+          if (!price) {
+            throw new Error("購入価格が不正です");
           }
 
           const purchase = await prisma.purchase.create({
             data: {
               userId,
-              purchase_price: product.price,
+              purchase_price: price,
               productId: product.id,
               dateKey: dateStr,
             },
@@ -96,7 +145,7 @@ app.post(
             });
           } catch (e) {
             // console.error(e);
-            console.error("Failed to send notification");
+            console.error("通知の送信に失敗しました");
           }
         }
 
@@ -108,7 +157,11 @@ app.post(
         200
       );
     } catch (e) {
-      return c.json({ success: false, error: "Failed to like the post" }, 400);
+      console.error(e);
+      return c.json(
+        { success: false, error: ["商品の購入に失敗しました"] },
+        400
+      );
     }
   }
 );
@@ -162,7 +215,16 @@ app.get(
             select: {
               id: true,
               name: true,
-              price: true,
+              price_histories: {
+                orderBy: {
+                  created_at: "desc",
+                },
+                take: 1,
+                select: {
+                  id: true,
+                  price: true,
+                },
+              },
               thumbnail_link: true,
               post: {
                 select: {

@@ -224,7 +224,16 @@ app.get(
         ...getPostParams(userId),
       });
 
-      console.log(posts);
+      posts.forEach((post) => {
+        if (post.product) {
+          post.product.price_histories = [
+            post.product.price_histories.sort(
+              (a, b) => b.created_at.getTime() - a.created_at.getTime()
+            )[0],
+          ];
+        }
+      });
+
       return c.json(
         { success: true, data: posts.toReversed(), length: posts.length },
         200
@@ -286,6 +295,18 @@ app.get(
         take: 10,
         ...getPostParams(userId),
       });
+
+      // postsのproductのprice_historiesをcreated_atで降順にソートして最初の要素だけ取得
+      posts.forEach((post) => {
+        if (post.product) {
+          post.product.price_histories = [
+            post.product.price_histories.sort(
+              (a, b) => b.created_at.getTime() - a.created_at.getTime()
+            )[0],
+          ];
+        }
+      });
+
       return c.json(
         { success: true, data: posts.toReversed(), length: posts.length },
         200
@@ -361,6 +382,15 @@ app.get(
       });
 
       const posts = likes.map((like) => like.post);
+      posts.forEach((post) => {
+        if (post.product) {
+          post.product.price_histories = [
+            post.product.price_histories.sort(
+              (a, b) => b.created_at.getTime() - a.created_at.getTime()
+            )[0],
+          ];
+        }
+      });
 
       return c.json(
         { success: true, data: posts.toReversed(), length: posts.length },

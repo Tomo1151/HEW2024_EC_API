@@ -286,8 +286,8 @@ app.post(
 
         // 商品画像のアップロード
         const blobNames: string[] = await uploadImages(imagesArray);
-        const priceNum: number = parseInt(price);
-        if (isNaN(priceNum)) {
+        const priceNum: number | undefined = parseInt(price);
+        if (price && isNaN(priceNum)) {
           return c.json(
             { success: false, error: ["価格は有効な数値でなければなりません"] },
             400
@@ -321,11 +321,13 @@ app.post(
                   product_link: data_url,
                   thumbnail_link: blobNames[0],
                   live_release: false,
-                  price_histories: {
-                    create: {
-                      price: priceNum,
-                    },
-                  },
+                  price_histories: price
+                    ? {
+                        create: {
+                          price: priceNum,
+                        },
+                      }
+                    : {},
                 },
               },
               tags: {
@@ -349,7 +351,7 @@ app.post(
         return c.json(
           {
             success: false,
-            error: [error],
+            error: ["商品の投稿に失敗しました"],
           },
           500
         );

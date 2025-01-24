@@ -67,6 +67,8 @@ app.get("/:username", async (c) => {
   const userId: string = await getUserIdFromCookie(c);
 
   let user;
+  let rating;
+
   try {
     const username = c.req.param("username");
     user = await prisma.user.findUniqueOrThrow({
@@ -95,10 +97,25 @@ app.get("/:username", async (c) => {
         },
       },
     });
+
+    rating = await prisma.productRating.aggregate({
+      where: {
+        product: {
+          post: {
+            author: {
+              username,
+            },
+          },
+        },
+      },
+      _avg: {
+        value: true,
+      },
+    });
   } catch (e) {
     return c.json({ success: false, error: "User not found" }, 404);
   }
-  return c.json({ success: true, data: user }, 200);
+  return c.json({ success: true, data: { rating, ...user } }, 200);
 });
 
 // MARK: ユーザーの編集

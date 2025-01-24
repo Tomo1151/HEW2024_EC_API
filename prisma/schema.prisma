@@ -92,7 +92,6 @@ model DailyPostImpression {
 model Product {
   id             String     @id @unique @default(cuid())
   name           String
-  price          Int?
   product_link   String?    @unique
   thumbnail_link String?    @unique
   live_release   Boolean
@@ -104,8 +103,20 @@ model Product {
   postId         String     @unique
   Purchase       Purchase[]
   product_ratings ProductRating[]
+  price_histories PriceHistory[]
 
   @@map("products")
+}
+
+model PriceHistory {
+  id         String   @id @unique @default(cuid())
+  price      Int
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+
+  @@map("price_histories")
 }
 
 // MARK: Model Repost

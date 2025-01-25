@@ -148,7 +148,7 @@ app.get(
         query.orderBy = { created_at: "desc" };
       }
 
-      console.log("tags: ", tagName);
+      // console.log("tags: ", tagName);
 
       if (tagName && tagName !== "最新の投稿") {
         query.where =
@@ -276,6 +276,8 @@ app.get(
           like_count: repost.post.like_count,
           ref_count: repost.post.ref_count,
           comment_count: repost.post.comment_count,
+          quote_count: repost.post.quote_count,
+          quoted_ref: repost.post.quoted_ref,
           created_at: repost.created_at,
           updated_at: repost.post.updated_at,
           userId: repost.post.userId,

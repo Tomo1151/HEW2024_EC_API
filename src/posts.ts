@@ -31,7 +31,7 @@ const MAX_IMAGE_COUNT: number = 4;
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
-  quote_ref: z.string().length(25).optional(),
+  quoted_ref: z.string().length(25).optional(),
   replied_ref: z.string().length(25).optional(),
   "tags[]": z.array(z.string().min(1).max(64)).optional(),
   files: z
@@ -369,7 +369,7 @@ app.post(
     // フォームデータの取得
     const formData: {
       content: string;
-      quote_ref: string;
+      quoted_ref: string;
       replied_ref: string;
       "tags[]": string[];
       files: (string | File)[] | (string | File);
@@ -388,11 +388,11 @@ app.post(
         ]
       : [];
     const content: string = formData.content;
-    const quote_ref: string = formData.quote_ref;
+    const quoted_ref: string = formData.quoted_ref;
     const replied_ref: string = formData.replied_ref;
     const files = formData.files;
 
-    console.log(content, tagNames, quote_ref, replied_ref);
+    console.log(content, tagNames, quoted_ref, replied_ref);
 
     // 画像ファイルの配列に変換
     const images = files ? [files].flat() : [];
@@ -432,7 +432,7 @@ app.post(
         const post = await prisma.post.create({
           data: {
             content,
-            quotedId: quote_ref,
+            quotedId: quoted_ref,
             repliedId: replied_ref,
             userId,
             tags: {
@@ -454,6 +454,39 @@ app.post(
             },
           },
         });
+
+        // @TODO 通知の作成
+        if (quoted_ref) {
+          await prisma.post.update({
+            where: {
+              id: quoted_ref,
+            },
+            data: {
+              quote_count: {
+                increment: 1,
+              },
+            },
+            select: {
+              author: true,
+            },
+          });
+        }
+
+        if (replied_ref) {
+          await prisma.post.update({
+            where: {
+              id: replied_ref,
+            },
+            data: {
+              comment_count: {
+                increment: 1,
+              },
+            },
+            select: {
+              author: true,
+            },
+          });
+        }
 
         return post;
       });
@@ -564,6 +597,24 @@ app.delete("/:id", isAuthenticated, async (c) => {
         },
       });
     }
+
+    if (post.quotedId) {
+      await prisma.post.update({
+        where: {
+          id: post.quotedId,
+        },
+        data: {
+          quote_count: {
+            decrement: 1,
+          },
+        },
+        select: {
+          author: true,
+        },
+      });
+    }
+
+    // @TODO 通知の削除
 
     return c.json({ success: true }, 200);
   } catch (e) {

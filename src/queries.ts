@@ -45,7 +45,42 @@ export const getPostParams = (userId: string) => ({
     },
     ref_count: true,
     replied_ref: true,
-    quoted_ref: true,
+    quote_count: true,
+    quoted_ref: {
+      select: {
+        id: true,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+            icon_link: true,
+          },
+        },
+        content: true,
+        images: {
+          select: {
+            image_link: true,
+          },
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            thumbnail_link: true,
+            live_release: true,
+            price_histories: {
+              select: {
+                id: true,
+                price: true,
+                created_at: true,
+              },
+            },
+          },
+        },
+        created_at: true,
+      },
+    },
     reposts: {
       where: {
         userId,

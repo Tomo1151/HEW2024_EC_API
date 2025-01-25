@@ -38,6 +38,7 @@ const productCreateSchema = z.object({
   description: z.string().min(1),
   price: z.string().min(1).optional(),
   "tags[]": z.array(z.string()).optional(),
+  quoted_ref: z.string().length(25).optional(),
   data: z
     .custom<File>()
     .superRefine((arg, ctx) => {
@@ -233,6 +234,7 @@ app.post(
         name,
         description,
         price,
+        quoted_ref,
         data,
         images,
         "tags[]": tags,
@@ -240,6 +242,7 @@ app.post(
         name: string;
         description: string;
         price: string;
+        quoted_ref: string;
         data: string | File;
         images: (string | File)[] | (string | File);
         "tags[]": string[];
@@ -310,6 +313,7 @@ app.post(
             data: {
               userId,
               content: description,
+              quotedId: quoted_ref,
               images: {
                 create: blobNames.map((link) => {
                   return { image_link: link };
@@ -342,6 +346,23 @@ app.post(
               },
             },
           });
+
+          // @TODO 通知の作成
+          if (quoted_ref) {
+            await prisma.post.update({
+              where: {
+                id: quoted_ref,
+              },
+              data: {
+                quote_count: {
+                  increment: 1,
+                },
+              },
+              select: {
+                author: true,
+              },
+            });
+          }
 
           return post;
         });

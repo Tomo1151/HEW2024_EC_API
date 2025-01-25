@@ -56,13 +56,16 @@ model Post {
   images        PostImage[]
   product       Product?
   reposts       Repost[]       @relation("Repost")
+  quotes        Post[]         @relation("Quote")
   replies       Post[]         @relation("Reply")
   likes         Like[]
   tags          TaggedPost[]
   notifications Notification[] @relation("asNotification")
   replied_ref   Post?          @relation("Reply", fields: [repliedId], references: [id], onDelete: Cascade)
+  quoted_ref    Post?          @relation("Quote", fields: [quotedId], references: [id], onDelete: Cascade)
   userId        String
   repliedId     String?
+  quotedId      String?
 
   @@map("posts")
 }

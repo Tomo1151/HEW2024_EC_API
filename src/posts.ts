@@ -32,6 +32,7 @@ const MAX_IMAGE_COUNT: number = 4;
 const postCreateSchema = z.object({
   content: z.string().min(1),
   quote_ref: z.string().length(25).optional(),
+  replied_ref: z.string().length(25).optional(),
   "tags[]": z.array(z.string().min(1).max(64)).optional(),
   files: z
     .custom<File | FileList>()
@@ -369,6 +370,7 @@ app.post(
     const formData: {
       content: string;
       quote_ref: string;
+      replied_ref: string;
       "tags[]": string[];
       files: (string | File)[] | (string | File);
     } = await c.req.parseBody({
@@ -387,9 +389,10 @@ app.post(
       : [];
     const content: string = formData.content;
     const quote_ref: string = formData.quote_ref;
+    const replied_ref: string = formData.replied_ref;
     const files = formData.files;
 
-    console.log(content, tagNames, quote_ref);
+    console.log(content, tagNames, quote_ref, replied_ref);
 
     // 画像ファイルの配列に変換
     const images = files ? [files].flat() : [];
@@ -430,6 +433,7 @@ app.post(
           data: {
             content,
             quotedId: quote_ref,
+            repliedId: replied_ref,
             userId,
             tags: {
               create: tags.map((tag) => ({

@@ -45,6 +45,7 @@ export const getPostParams = (userId: string) => ({
     },
     ref_count: true,
     replied_ref: true,
+    quoted_ref: true,
     reposts: {
       where: {
         userId,

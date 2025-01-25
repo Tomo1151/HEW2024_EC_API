@@ -31,6 +31,7 @@ const MAX_IMAGE_COUNT: number = 4;
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
   content: z.string().min(1),
+  quote_ref: z.string().length(25).optional(),
   "tags[]": z.array(z.string().min(1).max(64)).optional(),
   files: z
     .custom<File | FileList>()
@@ -367,6 +368,7 @@ app.post(
     // フォームデータの取得
     const formData: {
       content: string;
+      quote_ref: string;
       "tags[]": string[];
       files: (string | File)[] | (string | File);
     } = await c.req.parseBody({
@@ -384,7 +386,10 @@ app.post(
         ]
       : [];
     const content: string = formData.content;
+    const quote_ref: string = formData.quote_ref;
     const files = formData.files;
+
+    console.log(content, tagNames, quote_ref);
 
     // 画像ファイルの配列に変換
     const images = files ? [files].flat() : [];
@@ -394,7 +399,7 @@ app.post(
       return c.json(
         {
           success: false,
-          error: ["Invalid data type"],
+          error: ["画像ファイルが不正です"],
           data: null,
         },
         400
@@ -424,6 +429,7 @@ app.post(
         const post = await prisma.post.create({
           data: {
             content,
+            quotedId: quote_ref,
             userId,
             tags: {
               create: tags.map((tag) => ({

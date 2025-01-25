@@ -1,7 +1,5 @@
-import { writeFile } from "node:fs";
-
 import { zValidator } from "@hono/zod-validator";
-import { Post, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
 import { z } from "zod";
 

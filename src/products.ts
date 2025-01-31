@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 
-import { IMAGE_MIME_TYPE } from "../@types";
+import { IMAGE_MIME_TYPE, PRODUCT_DATA_TYPE } from "../@types";
 
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 import {
@@ -24,6 +24,15 @@ const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
   "image/gif",
   "image/webp",
 ];
+const PRODUCT_DATA_TYPES: Array<string> = [
+  "application/zip",
+  "application/x-zip-compressed",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+
 const MAX_IMAGE_COUNT: number = 4;
 
 // MARK: スキーマ定義
@@ -34,6 +43,7 @@ const ratingProductSchema = z.object({
 
 // 商品作成POSTのスキーマ
 const liveProductCreateSchema = z.object({
+  type: z.literal("live"),
   name: z.string().min(1),
   description: z.string().min(1),
   quoted_ref: z.string().length(25).optional(),
@@ -42,6 +52,7 @@ const liveProductCreateSchema = z.object({
 });
 
 const productSchema = z.object({
+  type: z.literal("product"),
   name: z.string().min(1),
   description: z.string().min(1),
   price: z.string().min(1).optional(),
@@ -62,11 +73,9 @@ const productSchema = z.object({
       message: "商品データのサイズは5MiBまでです",
     })
     .refine(
-      (file) =>
-        file.type === "application/zip" ||
-        file.type === "application/x-zip-compressed",
+      (file) => PRODUCT_DATA_TYPES.includes(file.type as PRODUCT_DATA_TYPE),
       {
-        message: "商品データの形式はZIPでなければなりません",
+        message: "商品データの形式はZIPまたは画像形式でなければなりません",
       }
     )
     .optional(),
@@ -241,6 +250,7 @@ app.post(
     try {
       // フォームデータの取得
       const {
+        type,
         name,
         description,
         price,
@@ -248,7 +258,9 @@ app.post(
         data,
         images,
         "tags[]": tags,
+        live_link,
       }: {
+        type: "live" | "product";
         name: string;
         description: string;
         price: string;
@@ -256,6 +268,7 @@ app.post(
         data: string | File;
         images: (string | File)[] | (string | File);
         "tags[]": string[];
+        live_link: string;
       } = await c.req.parseBody({ all: true });
 
       // @TODO できれば大文字小文字を区別したい (MySQL && prismaがcollationをサポートしていないため見送り)
@@ -263,6 +276,18 @@ app.post(
       const tagNames: string[] = tags
         ? [...new Set([tags].flat().map((tag) => tag.trim().toUpperCase()))]
         : [];
+
+      console.log(
+        type,
+        name,
+        description,
+        price,
+        quoted_ref,
+        data,
+        images,
+        tags,
+        live_link
+      );
 
       //  画像ファイルの配列に変換
       const imagesArray = images ? [images].flat() : [];
@@ -272,7 +297,7 @@ app.post(
         return c.json(
           {
             success: false,
-            error: ["画像ファイルはファイルでなければなりません"],
+            error: ["画像はファイルでなければなりません"],
             data: null,
           },
           400
@@ -281,103 +306,177 @@ app.post(
 
       try {
         // 商品データのアップロード
-        if (data instanceof File) {
-          data_url = await uploadBlobData({
-            targetContainer: "product",
-            file: data,
-          });
-        } else {
-          return c.json(
-            {
-              success: false,
-              error: ["商品データはファイルでなければなりません"],
-              data: null,
-            },
-            400
-          );
-        }
-
-        // 商品画像のアップロード
-        const blobNames: string[] = await uploadImages(imagesArray);
-        const priceNum: number | undefined = parseInt(price);
-        if (price && isNaN(priceNum)) {
-          return c.json(
-            { success: false, error: ["価格は有効な数値でなければなりません"] },
-            400
-          );
-        }
-
-        // 商品の作成 (トランザクション: タグの作成 -> 商品の作成)
-        const post = await prisma.$transaction(async (prisma) => {
-          const tags = await Promise.all(
-            tagNames.map((name) =>
-              prisma.tag.upsert({
-                where: { name },
-                update: {},
-                create: { name },
-              })
-            )
-          );
-
-          const post = await prisma.post.create({
-            data: {
-              userId,
-              content: description,
-              quotedId: quoted_ref,
-              images: {
-                create: blobNames.map((link) => {
-                  return { image_link: link };
-                }),
-              },
-              product: {
-                create: {
-                  name,
-                  product_link: data_url,
-                  thumbnail_link: blobNames[0],
-                  live_release: false,
-                  price_histories: price
-                    ? {
-                        create: {
-                          price: priceNum,
-                        },
-                      }
-                    : {},
-                },
-              },
-              tags: {
-                create: tags.map((tag) => ({
-                  tag: {
-                    connectOrCreate: {
-                      where: { name: tag.name },
-                      create: { name: tag.name },
-                    },
-                  },
-                })),
-              },
-            },
-          });
-
-          // @TODO 通知の作成
-          if (quoted_ref) {
-            await prisma.post.update({
-              where: {
-                id: quoted_ref,
-              },
-              data: {
-                quote_count: {
-                  increment: 1,
-                },
-              },
-              select: {
-                author: true,
-              },
-            });
+        if (type === "live") {
+          try {
+            new URL(live_link);
+          } catch (e) {
+            return c.json(
+              { success: false, error: ["ライブURLが不正です"] },
+              400
+            );
           }
 
-          return post;
-        });
+          // 商品の作成 (トランザクション: タグの作成 -> 商品の作成)
+          const post = await prisma.$transaction(async (prisma) => {
+            const tags = await Promise.all(
+              tagNames.map((name) =>
+                prisma.tag.upsert({
+                  where: { name },
+                  update: {},
+                  create: { name },
+                })
+              )
+            );
 
-        return c.json({ success: true, data: post }, 201);
+            const post = await prisma.post.create({
+              data: {
+                userId,
+                content: description,
+                live_link,
+                quotedId: quoted_ref,
+                product: {
+                  create: {
+                    name,
+                    product_link: data_url,
+                    live_release: true,
+                  },
+                },
+                tags: {
+                  create: tags.map((tag) => ({
+                    tag: {
+                      connectOrCreate: {
+                        where: { name: tag.name },
+                        create: { name: tag.name },
+                      },
+                    },
+                  })),
+                },
+              },
+            });
+
+            // @TODO 通知の作成
+            if (quoted_ref) {
+              await prisma.post.update({
+                where: {
+                  id: quoted_ref,
+                },
+                data: {
+                  quote_count: {
+                    increment: 1,
+                  },
+                },
+                select: {
+                  author: true,
+                },
+              });
+            }
+
+            return post;
+          });
+
+          return c.json({ success: true, data: post }, 201);
+        } else {
+          if (data instanceof File) {
+            data_url = await uploadBlobData({
+              targetContainer: "product",
+              file: data,
+            });
+          } else {
+            return c.json(
+              {
+                success: false,
+                error: ["商品データはファイルでなければなりません"],
+                data: null,
+              },
+              400
+            );
+          }
+
+          // 商品画像のアップロード
+          const blobNames: string[] = await uploadImages(imagesArray);
+          const priceNum: number | undefined = parseInt(price);
+          if (price && isNaN(priceNum)) {
+            return c.json(
+              {
+                success: false,
+                error: ["価格は有効な数値でなければなりません"],
+              },
+              400
+            );
+          }
+
+          // 商品の作成 (トランザクション: タグの作成 -> 商品の作成)
+          const post = await prisma.$transaction(async (prisma) => {
+            const tags = await Promise.all(
+              tagNames.map((name) =>
+                prisma.tag.upsert({
+                  where: { name },
+                  update: {},
+                  create: { name },
+                })
+              )
+            );
+
+            const post = await prisma.post.create({
+              data: {
+                userId,
+                content: description,
+                quotedId: quoted_ref,
+                images: {
+                  create: blobNames.map((link) => {
+                    return { image_link: link };
+                  }),
+                },
+                product: {
+                  create: {
+                    name,
+                    product_link: data_url,
+                    thumbnail_link: blobNames[0],
+                    live_release: false,
+                    price_histories: price
+                      ? {
+                          create: {
+                            price: priceNum,
+                          },
+                        }
+                      : {},
+                  },
+                },
+                tags: {
+                  create: tags.map((tag) => ({
+                    tag: {
+                      connectOrCreate: {
+                        where: { name: tag.name },
+                        create: { name: tag.name },
+                      },
+                    },
+                  })),
+                },
+              },
+            });
+
+            // @TODO 通知の作成
+            if (quoted_ref) {
+              await prisma.post.update({
+                where: {
+                  id: quoted_ref,
+                },
+                data: {
+                  quote_count: {
+                    increment: 1,
+                  },
+                },
+                select: {
+                  author: true,
+                },
+              });
+            }
+
+            return post;
+          });
+
+          return c.json({ success: true, data: post }, 201);
+        }
       } catch (error) {
         return c.json(
           {

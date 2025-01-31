@@ -10,8 +10,15 @@ export type IMAGE_MIME_TYPE =
   | "image/jpeg"
   | "image/png"
   | "image/gif"
-  | "image/webp"
-  | "image/svg+xml";
+  | "image/webp";
+
+export type PRODUCT_DATA_TYPE =
+  | "application/zip"
+  | "application/x-zip-compressed"
+  | "image/jpeg"
+  | "image/png"
+  | "image/gif"
+  | "image/webp";
 
 export type Notification = {
   type: number;

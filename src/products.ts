@@ -33,7 +33,15 @@ const ratingProductSchema = z.object({
 });
 
 // 商品作成POSTのスキーマ
-const productCreateSchema = z.object({
+const liveProductCreateSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  quoted_ref: z.string().length(25).optional(),
+  "tags[]": z.array(z.string()).optional(),
+  live_link: z.string().url(),
+});
+
+const productSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   price: z.string().min(1).optional(),
@@ -119,6 +127,8 @@ const productCreateSchema = z.object({
       { message: "画像ファイルの形式はJPEG/PNG/GIF/WEBPでなければなりません" }
     ),
 });
+
+const productCreateSchema = productSchema.or(liveProductCreateSchema);
 
 // MARK: 商品一覧の取得
 app.get("/", async (c) => {

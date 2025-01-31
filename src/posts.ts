@@ -188,6 +188,31 @@ app.get(
         ...query,
       });
 
+      const productRatings = await prisma.productRating.groupBy({
+        by: ["productId"],
+        _avg: {
+          value: true,
+        },
+      });
+
+      // postとproductRatingsをpost.productIdで結合して新たなオブジェクトを作成
+      const returnPosts = posts.map((post) => {
+        const productRating = productRatings.find(
+          (rating) => rating.productId === post.product?.id
+        );
+        return {
+          ...post,
+          product: post.product
+            ? {
+                ...post.product,
+                rating: productRating?._avg.value || -1,
+              }
+            : undefined,
+        };
+      });
+
+      console.log(returnPosts);
+
       // repostsを取得し、関連するpostのcontentを取得
       if ("replied_ref" in query.where) {
         delete query.where.replied_ref;
@@ -271,7 +296,12 @@ app.get(
           id: repost.id,
           content: repost.post.content,
           images: repost.post.images,
-          product: repost.post.product,
+          product: repost.post.product && {
+            ...repost.post.product,
+            rating: productRatings.find(
+              (rating) => rating.productId === repost.post.product!.id
+            )?._avg.value,
+          },
           live_link: repost.post.live_link,
           like_count: repost.post.like_count,
           ref_count: repost.post.ref_count,
@@ -290,7 +320,7 @@ app.get(
           tags: repost.post.tags,
           type: "repost",
         })),
-        ...posts.map((post) => ({ ...post, type: "post" })),
+        ...returnPosts.map((post) => ({ ...post, type: "post" })),
       ]
         .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
         .slice(0, 10);

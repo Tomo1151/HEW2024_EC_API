@@ -211,7 +211,7 @@ app.get(
         };
       });
 
-      console.log(returnPosts);
+      // console.log(returnPosts);
 
       // repostsを取得し、関連するpostのcontentを取得
       if ("replied_ref" in query.where) {

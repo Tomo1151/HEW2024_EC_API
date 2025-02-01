@@ -251,8 +251,35 @@ app.get(
         }
       });
 
+      const productRatings = await prisma.productRating.groupBy({
+        by: ["productId"],
+        _avg: {
+          value: true,
+        },
+      });
+
+      // postとproductRatingsをpost.productIdで結合して新たなオブジェクトを作成
+      const returnPosts = posts.map((post) => {
+        const productRating = productRatings.find(
+          (rating) => rating.productId === post.product?.id
+        );
+        return {
+          ...post,
+          product: post.product
+            ? {
+                ...post.product,
+                rating: productRating?._avg.value || -1,
+              }
+            : undefined,
+        };
+      });
+
       return c.json(
-        { success: true, data: posts.toReversed(), length: posts.length },
+        {
+          success: true,
+          data: returnPosts.toReversed(),
+          length: returnPosts.length,
+        },
         200
       );
     } catch (e) {
@@ -324,8 +351,35 @@ app.get(
         }
       });
 
+      const productRatings = await prisma.productRating.groupBy({
+        by: ["productId"],
+        _avg: {
+          value: true,
+        },
+      });
+
+      // postとproductRatingsをpost.productIdで結合して新たなオブジェクトを作成
+      const returnPosts = posts.map((post) => {
+        const productRating = productRatings.find(
+          (rating) => rating.productId === post.product?.id
+        );
+        return {
+          ...post,
+          product: post.product
+            ? {
+                ...post.product,
+                rating: productRating?._avg.value || -1,
+              }
+            : undefined,
+        };
+      });
+
       return c.json(
-        { success: true, data: posts.toReversed(), length: posts.length },
+        {
+          success: true,
+          data: returnPosts.toReversed(),
+          length: returnPosts.length,
+        },
         200
       );
     } catch (e) {
@@ -409,8 +463,35 @@ app.get(
         }
       });
 
+      const productRatings = await prisma.productRating.groupBy({
+        by: ["productId"],
+        _avg: {
+          value: true,
+        },
+      });
+
+      // postとproductRatingsをpost.productIdで結合して新たなオブジェクトを作成
+      const returnPosts = posts.map((post) => {
+        const productRating = productRatings.find(
+          (rating) => rating.productId === post.product?.id
+        );
+        return {
+          ...post,
+          product: post.product
+            ? {
+                ...post.product,
+                rating: productRating?._avg.value || -1,
+              }
+            : undefined,
+        };
+      });
+
       return c.json(
-        { success: true, data: posts.toReversed(), length: posts.length },
+        {
+          success: true,
+          data: returnPosts.toReversed(),
+          length: returnPosts.length,
+        },
         200
       );
     } catch (e) {

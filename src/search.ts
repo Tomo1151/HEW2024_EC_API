@@ -158,10 +158,34 @@ app.get(
           take: 10,
           ...getPostParams(userId),
         });
+
+        const productRatings = await prisma.productRating.groupBy({
+          by: ["productId"],
+          _avg: {
+            value: true,
+          },
+        });
+
+        // postとproductRatingsをpost.productIdで結合して新たなオブジェクトを作成
+        const returnPosts = posts.map((post) => {
+          const productRating = productRatings.find(
+            (rating) => rating.productId === post.product?.id
+          );
+          return {
+            ...post,
+            product: post.product
+              ? {
+                  ...post.product,
+                  rating: productRating?._avg.value || -1,
+                }
+              : undefined,
+          };
+        });
+
         return c.json({
           success: true,
-          data: posts.map((post) => ({ type: "post", ...post })),
-          length: posts.length,
+          data: returnPosts.map((post) => ({ type: "post", ...post })),
+          length: returnPosts.length,
         });
       }
     } catch (e) {

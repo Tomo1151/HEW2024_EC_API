@@ -39,7 +39,7 @@ const postCreateSchema = z.object({
     .refine(
       (files) => {
         if (files instanceof File) return true;
-        console.log("File length: ", Array.from(files).length);
+        // console.log("File length: ", Array.from(files).length);
         return Array.from(files).length <= MAX_IMAGE_COUNT;
       },
       {
@@ -52,7 +52,7 @@ const postCreateSchema = z.object({
           return files.size < IMAGE_SIZE_LIMIT;
         }
         return Array.from(files).every((file) => {
-          console.log("File size: ", file.size);
+          // console.log("File size: ", file.size);
           return file.size < IMAGE_SIZE_LIMIT;
         });
       },
@@ -375,6 +375,27 @@ app.get("/:id", async (c) => {
       ...getPostParams(userId),
     });
     await updatePostImpressionCount(post.id);
+
+    if (post.product) {
+      const productRating = await prisma.productRating.groupBy({
+        by: ["productId"],
+        where: {
+          productId: post.product?.id,
+        },
+        _avg: {
+          value: true,
+        },
+      });
+
+      const postData = {
+        ...post,
+        product: {
+          ...post.product,
+          rating: productRating[0]?._avg.value || -1,
+        },
+      };
+      return c.json({ success: true, data: postData }, 200);
+    }
     return c.json({ success: true, data: post }, 200);
   } catch {
     return c.json({ success: false, error: "Failed to fetch post" }, 404);
@@ -424,7 +445,7 @@ app.post(
     const replied_ref: string = formData.replied_ref;
     const files = formData.files;
 
-    console.log(content, tagNames, quoted_ref, replied_ref);
+    // console.log(content, tagNames, quoted_ref, replied_ref);
 
     // 画像ファイルの配列に変換
     const images = files ? [files].flat() : [];

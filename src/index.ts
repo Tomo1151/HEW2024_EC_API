@@ -20,6 +20,7 @@ import purchases from "./purchases.js";
 import likes from "./likes.js";
 import tags from "./tags.js";
 import reposts from "./reposts.js";
+import quotes from "./quotes.js";
 import follows from "./follows.js";
 import notifications from "./notifications.js";
 import stats from "./stats.js";
@@ -55,7 +56,7 @@ app.use(
   })
 );
 
-app.use("*", except("/media/*", isAllowedOrigin));
+// app.use("*", except("/media/*", isAllowedOrigin));
 app.use(trimTrailingSlash());
 
 app.use(logger());
@@ -63,6 +64,7 @@ app.route("/", statics);
 app.route("/auth", auth);
 app.route("/users", users);
 app.route("/posts", posts);
+app.route("/", quotes);
 app.route("/products", products);
 app.route("/search", serach);
 app.route("/trendings", trends);

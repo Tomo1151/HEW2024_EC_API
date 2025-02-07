@@ -56,7 +56,7 @@ app.use(
   })
 );
 
-// app.use("*", except("/media/*", isAllowedOrigin));
+app.use("*", except("/media/*", isAllowedOrigin));
 app.use(trimTrailingSlash());
 
 app.use(logger());

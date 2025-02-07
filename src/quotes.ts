@@ -12,6 +12,7 @@ const prisma = new PrismaClient();
 
 // MARK: スキーマ定義
 const quoteTimelineSchema = z.object({
+  type: z.union([z.literal("posts"), z.literal("products")]),
   before: z.string(),
 });
 
@@ -26,6 +27,7 @@ app.get(
   async (c) => {
     const quotedId: string = c.req.param("quotedId");
     const userId: string = await getUserIdFromCookie(c);
+    const type: string = c.req.valid("query").type;
     const before: string = c.req.valid("query").before;
 
     console.log("quotedId", quotedId);
@@ -47,6 +49,7 @@ app.get(
             { quotedId },
             targetPost ? { created_at: { lt: targetPost.created_at } } : {},
           ],
+          ...(type === "products" ? { NOT: { product: null } } : {}),
         },
         orderBy: {
           created_at: "desc",

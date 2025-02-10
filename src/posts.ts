@@ -75,11 +75,13 @@ const postCreateSchema = z.object({
 const getLatestPostsSchema = z.object({
   tagName: z.string().optional(),
   after: z.string(),
+  live: z.literal("true").optional(),
 });
 
 const getOldPostsSchema = z.object({
   tagName: z.string().optional(),
   before: z.string(),
+  live: z.literal("true").optional(),
 });
 
 const geTimelinePostsSchema = getLatestPostsSchema.or(getOldPostsSchema);
@@ -98,7 +100,8 @@ app.get(
       tagName,
       after,
       before,
-    }: { tagName?: string; after?: string; before?: string } =
+      live,
+    }: { tagName?: string; after?: string; before?: string; live?: string } =
       c.req.valid("query");
 
     const targetId = before ? before : after;
@@ -146,6 +149,15 @@ app.get(
           replied_ref: null,
         };
         query.orderBy = { created_at: "desc" };
+      }
+
+      if (live) {
+        query.where = {
+          ...query.where,
+          live_link: {
+            not: null,
+          },
+        };
       }
 
       // console.log("tags: ", tagName);
@@ -234,6 +246,10 @@ app.get(
         };
       }
 
+      if ("live_link" in query.where) {
+        delete query.where.live_link;
+      }
+
       if (tagName && tagName !== "最新の投稿") {
         query.where =
           tagName === "フォロー中"
@@ -270,7 +286,18 @@ app.get(
               };
       }
 
-      console.dir(query, { depth: null });
+      if (live) {
+        query.where = {
+          ...query.where,
+          post: {
+            live_link: {
+              not: null,
+            },
+          },
+        };
+      }
+
+      // console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({
         select: {

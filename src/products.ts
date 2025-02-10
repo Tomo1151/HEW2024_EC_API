@@ -114,7 +114,7 @@ const productSchema = z.object({
         } else if (files instanceof Array) {
           return Array.from(files).every((file) => {
             if (!(file instanceof File)) return false;
-            console.log("File size: ", file.size);
+            // console.log("File size: ", file.size);
             return file.size < IMAGE_SIZE_LIMIT;
           });
         }
@@ -277,17 +277,17 @@ app.post(
         ? [...new Set([tags].flat().map((tag) => tag.trim().toUpperCase()))]
         : [];
 
-      console.log(
-        type,
-        name,
-        description,
-        price,
-        quoted_ref,
-        data,
-        images,
-        tags,
-        live_link
-      );
+      // console.log(
+      //   type,
+      //   name,
+      //   description,
+      //   price,
+      //   quoted_ref,
+      //   data,
+      //   images,
+      //   tags,
+      //   live_link
+      // );
 
       //  画像ファイルの配列に変換
       const imagesArray = images ? [images].flat() : [];

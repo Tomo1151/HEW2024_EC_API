@@ -46,7 +46,7 @@ app.post(
     const dateStr = `${now.getFullYear()}-${
       now.getMonth() + 1
     }-${now.getDate()}`;
-    console.log(userId, requestProducts);
+    // console.log(userId, requestProducts);
     try {
       // トランザクション処理
       const purchases = await prisma.$transaction(async (prisma) => {

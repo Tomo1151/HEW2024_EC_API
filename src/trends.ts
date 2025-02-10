@@ -73,7 +73,7 @@ app.get("/", async (c) => {
       },
     });
 
-    console.log(trendingProducts);
+    // console.log(trendingProducts);
 
     return c.json(
       {

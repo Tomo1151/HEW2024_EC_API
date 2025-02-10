@@ -30,7 +30,7 @@ app.get(
     const type: string = c.req.valid("query").type;
     const before: string = c.req.valid("query").before;
 
-    console.log("quotedId", quotedId);
+    // console.log("quotedId", quotedId);
 
     try {
       let targetPost;

@@ -374,11 +374,12 @@ app.get(
       return c.json(
         {
           success: true,
-          data: targetPost
-            ? before
-              ? timeline.toReversed()
-              : timeline
-            : timeline.toReversed(),
+          data: timeline,
+          // data: targetPost
+          //   ? before
+          //     ? timeline.toReversed()
+          //     : timeline
+          //   : timeline.toReversed(),
           length: timeline.length,
         },
         200

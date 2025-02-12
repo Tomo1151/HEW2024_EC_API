@@ -186,10 +186,10 @@ export async function deleteBlobByName({
       deleteSnapshots: "include",
     });
 
-    console.log(
-      `Delete block blob ${blobName} successfully`,
-      deleteBlockBlobResponse.requestId
-    );
+    // console.log(
+    //   `Delete block blob ${blobName} successfully`,
+    //   deleteBlockBlobResponse.requestId
+    // );
 
     return true;
   } catch (error) {
@@ -251,10 +251,10 @@ export async function uploadBlobData({
   const uploadBlobResponse: BlockBlobUploadResponse =
     await blockBlobClient.upload(fileData, Buffer.byteLength(fileData));
 
-  console.log(
-    `Upload block blob ${blobName} successfully`,
-    uploadBlobResponse.requestId
-  );
+  // console.log(
+  //   `Upload block blob ${blobName} successfully`,
+  //   uploadBlobResponse.requestId
+  // );
 
   return blobName;
 }

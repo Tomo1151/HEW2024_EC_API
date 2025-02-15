@@ -113,7 +113,7 @@ app.get(
           id: targetId,
         },
         select: {
-          created_at: true,
+          updated_at: true,
         },
       })) ||
       (await prisma.repost.findUnique({
@@ -121,7 +121,7 @@ app.get(
           id: targetId,
         },
         select: {
-          created_at: true,
+          updated_at: true,
         },
       }));
 
@@ -137,19 +137,19 @@ app.get(
           AND: [
             { replied_ref: null },
             {
-              created_at: before
-                ? { lt: targetPost.created_at }
-                : { gt: targetPost.created_at },
+              updated_at: before
+                ? { lt: targetPost.updated_at }
+                : { gt: targetPost.updated_at },
             },
           ],
         };
 
-        if (before) query.orderBy = { created_at: "desc" };
+        if (before) query.orderBy = { updated_at: "desc" };
       } else {
         query.where = {
           replied_ref: null,
         };
-        query.orderBy = { created_at: "desc" };
+        query.orderBy = { updated_at: "desc" };
       }
 
       if (live) {
@@ -241,9 +241,9 @@ app.get(
 
       if ("AND" in query.where && targetPost) {
         query.where = {
-          created_at: before
-            ? { lt: targetPost.created_at }
-            : { gt: targetPost.created_at },
+          updated_at: before
+            ? { lt: targetPost.updated_at }
+            : { gt: targetPost.updated_at },
         };
       }
 
@@ -305,6 +305,7 @@ app.get(
           id: true,
           postId: true,
           created_at: true,
+          updated_at: true,
           user: {
             select: {
               id: true,
@@ -337,10 +338,11 @@ app.get(
           quote_count: repost.post.quote_count,
           quoted_ref: repost.post.quoted_ref,
           created_at: repost.created_at,
-          updated_at: repost.post.updated_at,
+          updated_at: repost.updated_at,
           userId: repost.post.userId,
           postId: repost.postId,
           postCreatedAt: repost.post.created_at,
+          postUpdatedAt: repost.post.updated_at,
           author: repost.post.author,
           reposts: repost.post.reposts,
           likes: repost.post.likes,
@@ -350,7 +352,7 @@ app.get(
         })),
         ...returnPosts.map((post) => ({ ...post, type: "post" })),
       ]
-        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+        .sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime())
         .slice(0, 10);
 
       // post の product の price_histories の created_at で降順にソート，最新のもの以外を削除

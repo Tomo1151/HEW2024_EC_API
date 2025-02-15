@@ -6,6 +6,7 @@ import { z } from "zod";
 import isAuthenticated from "./middlewares/isAuthenticated.js";
 
 import {
+  deleteBlobByName,
   getUserIdFromCookie,
   updatePostImpressionCount,
   uploadImages,
@@ -634,7 +635,12 @@ app.delete("/:id", isAuthenticated, async (c) => {
       where: {
         id: c.req.param("id"),
       },
+      include: {
+        product: true,
+        images: true,
+      },
     });
+
     if (post.userId !== userId) {
       return c.json(
         {
@@ -644,6 +650,26 @@ app.delete("/:id", isAuthenticated, async (c) => {
         },
         403
       );
+    }
+
+    if (post.product && post.product.product_link) {
+      try {
+        await deleteBlobByName({
+          targetContainer: "product",
+          blobName: post.product.product_link,
+        });
+      } catch (error) {
+        console.log("Failed to delete product image:", error);
+      }
+    }
+
+    if (post.images.length > 0) {
+      for (const image of post.images) {
+        await deleteBlobByName({
+          targetContainer: "product",
+          blobName: image.image_link,
+        });
+      }
     }
 
     await prisma.post.delete({

@@ -536,7 +536,7 @@ app.put(
     try {
       const post = await prisma.post.findUniqueOrThrow({
         where: { id: postId },
-        include: { product: true },
+        include: { product: true, tags: { include: { tag: true } } },
       });
 
       if (post.userId !== userId) {
@@ -575,9 +575,16 @@ app.put(
         live_link: string;
       } = await c.req.parseBody({ all: true });
 
-      const tagNames: string[] = tags
+      // 取得したpostのタグとPUTリクエストのタグを比較して、新しいタグを追加する
+      const oldTags = post.tags.map((tag) => tag.tag.name);
+      const newTags = tags
         ? [...new Set([tags].flat().map((tag) => tag.trim().toUpperCase()))]
         : [];
+
+      const tagsToAdd = newTags.filter((tag) => !oldTags.includes(tag));
+      const tagsToRemove = oldTags.filter((tag) => !newTags.includes(tag));
+
+      console.log(newTags, oldTags, tagsToAdd, tagsToRemove);
 
       const imagesArray = images ? [images].flat() : [];
 
@@ -622,7 +629,7 @@ app.put(
         }
 
         const tags = await Promise.all(
-          tagNames.map((name) =>
+          tagsToAdd.map((name) =>
             prisma.tag.upsert({
               where: { name },
               update: {},
@@ -631,18 +638,27 @@ app.put(
           )
         );
 
+        // Delete tag associations that are to be removed before updating the post.
+        if (tagsToRemove.length > 0) {
+          await prisma.taggedPost.deleteMany({
+            where: {
+              postId: postId,
+              tag: { name: { in: tagsToRemove } },
+            },
+          });
+        }
+
         const updatedPost = await prisma.post.update({
           where: { id: postId },
           data: {
             content: description || post.content,
             quotedId: quoted_ref,
             tags: {
-              set: [],
-              create: tags.map((tag) => ({
+              create: tagsToAdd.map((tag) => ({
                 tag: {
                   connectOrCreate: {
-                    where: { name: tag.name },
-                    create: { name: tag.name },
+                    where: { name: tag },
+                    create: { name: tag },
                   },
                 },
               })),
@@ -677,7 +693,7 @@ app.put(
     } catch (e) {
       console.log(e);
       return c.json(
-        { success: false, error: "Failed to update the product" },
+        { success: false, error: ["Failed to update the product"] },
         400
       );
     }

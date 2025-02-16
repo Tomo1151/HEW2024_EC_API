@@ -628,7 +628,7 @@ app.put(
           );
         }
 
-        const tags = await Promise.all(
+        await Promise.all(
           tagsToAdd.map((name) =>
             prisma.tag.upsert({
               where: { name },
@@ -652,6 +652,8 @@ app.put(
           where: { id: postId },
           data: {
             content: description || post.content,
+            live_link:
+              type === "live_edit" ? live_link || post.live_link : null,
             quotedId: quoted_ref,
             tags: {
               create: tagsToAdd.map((tag) => ({

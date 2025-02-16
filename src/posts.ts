@@ -425,6 +425,13 @@ app.get("/:id", async (c) => {
           rating: productRating[0]?._avg.value || -1,
         },
       };
+
+      if (postData.product) {
+        postData.product.price_histories = postData.product.price_histories
+          .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+          .slice(0, 1);
+      }
+
       return c.json({ success: true, data: postData }, 200);
     }
     return c.json({ success: true, data: post }, 200);

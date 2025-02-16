@@ -131,6 +131,7 @@ model Repost {
   userId     String
   postId     String
   created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
 
   @@unique([userId, postId])
   @@map("reposts")

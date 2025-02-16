@@ -41,8 +41,25 @@ const ratingProductSchema = z.object({
   value: z.number().min(1).max(5),
 });
 
+// 商品更新PUTのスキーマ
+const putLiveProductSchema = z.object({
+  type: z.literal("live_edit"),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  "tags[]": z.array(z.string()).optional(),
+  live_link: z.string().url().optional(),
+});
+
+const putProductSchema = z.object({
+  type: z.literal("product_edit"),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  price: z.string().min(1).optional(),
+  "tags[]": z.array(z.string()).optional(),
+});
+
 // 商品作成POSTのスキーマ
-const liveProductCreateSchema = z.object({
+const liveProductSchema = z.object({
   type: z.literal("live"),
   name: z.string().min(1),
   description: z.string().min(1),
@@ -51,7 +68,7 @@ const liveProductCreateSchema = z.object({
   live_link: z.string().url(),
 });
 
-const productSchema = z.object({
+const postProductSchema = z.object({
   type: z.literal("product"),
   name: z.string().min(1),
   description: z.string().min(1),
@@ -137,7 +154,8 @@ const productSchema = z.object({
     ),
 });
 
-const productCreateSchema = productSchema.or(liveProductCreateSchema);
+const productSchema = postProductSchema.or(liveProductSchema);
+const editProductSchema = putProductSchema.or(putLiveProductSchema);
 
 // MARK: 商品一覧の取得
 app.get("/", async (c) => {
@@ -232,14 +250,14 @@ app.post(
 app.post(
   "/",
   isAuthenticated,
-  zValidator("form", productCreateSchema, (result, c) => {
+  zValidator("form", productSchema, (result, c) => {
     if (!result.success) {
       return c.json(
         {
           success: false,
           error: result.error.issues.map((issue) => issue.message),
         },
-        500
+        400
       );
     }
   }),
@@ -490,6 +508,194 @@ app.post(
       console.log(e);
       return c.json(
         { success: false, error: "Failed to create the product" },
+        400
+      );
+    }
+  }
+);
+
+// MARK: 商品の更新
+app.put(
+  "/:postId",
+  isAuthenticated,
+  zValidator("form", editProductSchema.or(postProductSchema), (result, c) => {
+    if (!result.success) {
+      return c.json(
+        {
+          success: false,
+          error: result.error.issues.map((issue) => issue.message),
+        },
+        400
+      );
+    }
+  }),
+  async (c) => {
+    const postId: string = c.req.param("postId");
+    const userId: string = c.get("jwtPayload").sub;
+
+    try {
+      const post = await prisma.post.findUniqueOrThrow({
+        where: { id: postId },
+        include: { product: true, tags: { include: { tag: true } } },
+      });
+
+      if (post.userId !== userId) {
+        return c.json(
+          { success: false, error: ["You can only update your own product"] },
+          403
+        );
+      }
+
+      if (post.product == null) {
+        return c.json(
+          { success: false, error: ["商品以外は編集できません"] },
+          404
+        );
+      }
+
+      const {
+        type,
+        name,
+        description,
+        price,
+        quoted_ref,
+        data,
+        images,
+        "tags[]": tags,
+        live_link,
+      }: {
+        type: "live" | "live_edit" | "product" | "product_edit";
+        name: string;
+        description: string;
+        price: string;
+        quoted_ref: string;
+        data: string | File;
+        images: (string | File)[] | (string | File);
+        "tags[]": string[];
+        live_link: string;
+      } = await c.req.parseBody({ all: true });
+
+      // 取得したpostのタグとPUTリクエストのタグを比較して、新しいタグを追加する
+      const oldTags = post.tags.map((tag) => tag.tag.name);
+      const newTags = tags
+        ? [...new Set([tags].flat().map((tag) => tag.trim().toUpperCase()))]
+        : [];
+
+      const tagsToAdd = newTags.filter((tag) => !oldTags.includes(tag));
+      const tagsToRemove = oldTags.filter((tag) => !newTags.includes(tag));
+
+      console.log(newTags, oldTags, tagsToAdd, tagsToRemove);
+
+      const imagesArray = images ? [images].flat() : [];
+
+      if (!imagesArray.every((image) => image instanceof File)) {
+        return c.json(
+          {
+            success: false,
+            error: ["画像はファイルでなければなりません"],
+            data: null,
+          },
+          400
+        );
+      }
+
+      const priceNum: number | undefined = parseInt(price);
+      if (price && isNaN(priceNum)) {
+        return c.json(
+          {
+            success: false,
+            error: ["価格は有効な数値でなければなりません"],
+          },
+          400
+        );
+      }
+
+      let data_url: string | undefined;
+      if (data instanceof File) {
+        data_url = await uploadBlobData({
+          targetContainer: "product",
+          file: data,
+        });
+      }
+
+      const blobNames: string[] = await uploadImages(imagesArray);
+
+      const updatedPost = await prisma.$transaction(async (prisma) => {
+        if (post.product == null) {
+          return c.json(
+            { success: false, error: ["商品以外は編集できません"] },
+            404
+          );
+        }
+
+        await Promise.all(
+          tagsToAdd.map((name) =>
+            prisma.tag.upsert({
+              where: { name },
+              update: {},
+              create: { name },
+            })
+          )
+        );
+
+        // Delete tag associations that are to be removed before updating the post.
+        if (tagsToRemove.length > 0) {
+          await prisma.taggedPost.deleteMany({
+            where: {
+              postId: postId,
+              tag: { name: { in: tagsToRemove } },
+            },
+          });
+        }
+
+        const updatedPost = await prisma.post.update({
+          where: { id: postId },
+          data: {
+            content: description || post.content,
+            live_link:
+              type === "live_edit" ? live_link || post.live_link : null,
+            quotedId: quoted_ref,
+            tags: {
+              create: tagsToAdd.map((tag) => ({
+                tag: {
+                  connectOrCreate: {
+                    where: { name: tag },
+                    create: { name: tag },
+                  },
+                },
+              })),
+            },
+            images: {
+              create: blobNames.map((link) => ({
+                image_link: link,
+              })),
+            },
+            product: {
+              update: {
+                name: name || post.product.name,
+                product_link: data_url || post.product.product_link,
+                thumbnail_link: blobNames[0] || post.product.thumbnail_link,
+                live_release: type === "live" || type == "live_edit",
+                price_histories: price
+                  ? {
+                      create: {
+                        price: priceNum,
+                      },
+                    }
+                  : {},
+              },
+            },
+          },
+        });
+
+        return updatedPost;
+      });
+
+      return c.json({ success: true, data: updatedPost }, 200);
+    } catch (e) {
+      console.log(e);
+      return c.json(
+        { success: false, error: ["Failed to update the product"] },
         400
       );
     }

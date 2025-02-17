@@ -24,6 +24,7 @@ import quotes from "./quotes.js";
 import follows from "./follows.js";
 import notifications from "./notifications.js";
 import stats from "./stats.js";
+import contactForm from "./contactForm.js";
 import { isAllowedOrigin } from "./middlewares/isAllowedOrigin.js";
 
 // const packageJson: { version: string } = require("../package.json");
@@ -76,6 +77,7 @@ app.route("/", likes);
 app.route("/users", follows);
 app.route("/notifications", notifications);
 app.route("/stats", stats);
+app.route("/contactForm", contactForm);
 
 app.get("/", (c) => {
   return c.text("Hello Hono! 🔥");

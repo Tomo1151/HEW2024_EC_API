@@ -37,7 +37,6 @@ app.post(
         headers: { "Content-Type": "application/json" },
       }
     );
-    await console.log(await response.text());
     return c.json(
       {
         success: true,

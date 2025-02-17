@@ -164,13 +164,13 @@ app.put(
           targetContainer: "icon",
           file: icon,
         });
-      }
 
-      if (reqUser.icon_link) {
-        await deleteBlobByName({
-          targetContainer: "icon",
-          blobName: reqUser.icon_link,
-        });
+        if (reqUser.icon_link) {
+          await deleteBlobByName({
+            targetContainer: "icon",
+            blobName: reqUser.icon_link,
+          });
+        }
       }
 
       await prisma.user.update({
@@ -179,7 +179,7 @@ app.put(
           nickname,
           bio,
           homepage_link,
-          icon_link,
+          icon_link: icon_link || reqUser.icon_link,
         },
       });
     } catch (e) {

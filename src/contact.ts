@@ -6,11 +6,11 @@ import { zValidator } from "@hono/zod-validator";
 // MARK: 定数宣言
 const app: Hono = new Hono();
 
-if (!process.env.DISCORD_WEBHOOK) {
-  throw new Error("Discord webhook URL isn't defined");
+if (!process.env.CONTACT_WEBHOOK_URL) {
+  throw new Error("Contact webhook URL isn't defined");
 }
 
-const DISCORD_WEBHOOK: string = process.env.DISCORD_WEBHOOK;
+const CONTACT_WEBHOOK_URL: string = process.env.CONTACT_WEBHOOK_URL;
 
 const contactFormSchema = z.object({
   name: z.string().min(1),
@@ -33,7 +33,7 @@ app.post(
   }),
   async (c) => {
     const { name, email, message } = c.req.valid("json");
-    const response = await fetch(DISCORD_WEBHOOK, {
+    const response = await fetch(CONTACT_WEBHOOK_URL, {
       method: "POST",
       body: JSON.stringify({
         content: `お名前:\n* ${name} \n\nメール:\n* ${email}\n\n内容:\n* ${message}`,

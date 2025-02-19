@@ -135,6 +135,7 @@ app.get(
       if (targetPost) {
         query.where = {
           AND: [
+            { author: { is_active: true } },
             { replied_ref: null },
             {
               created_at: before
@@ -148,6 +149,9 @@ app.get(
       } else {
         query.where = {
           replied_ref: null,
+          author: {
+            is_active: true,
+          },
         };
         query.orderBy = { created_at: "desc" };
       }
@@ -298,6 +302,18 @@ app.get(
         };
       }
 
+      query.where = {
+        ...query.where,
+        post: {
+          author: {
+            is_active: true,
+          },
+        },
+        user: {
+          is_active: true,
+        },
+      };
+
       // console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({
@@ -402,6 +418,9 @@ app.get("/:id", async (c) => {
     const post = await prisma.post.findUniqueOrThrow({
       where: {
         id: c.req.param("id"),
+        author: {
+          is_active: true,
+        },
       },
       ...getPostParams(userId),
     });
@@ -640,6 +659,15 @@ app.put(
 app.delete("/:id", isAuthenticated, async (c) => {
   const userId = c.get("jwtPayload").sub;
   try {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: {
+        id: userId,
+      },
+      select: {
+        is_superuser: true,
+      },
+    });
+
     const post = await prisma.post.findUniqueOrThrow({
       where: {
         id: c.req.param("id"),
@@ -650,7 +678,7 @@ app.delete("/:id", isAuthenticated, async (c) => {
       },
     });
 
-    if (post.userId !== userId) {
+    if (post.userId !== userId && !user.is_superuser) {
       return c.json(
         {
           success: false,

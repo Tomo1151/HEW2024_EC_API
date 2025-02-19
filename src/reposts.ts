@@ -76,14 +76,12 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
       ...getPostParams(userId),
     });
 
-    await prisma.notification.delete({
+    await prisma.notification.deleteMany({
       where: {
-        type_senderId_recepientId_relPostId: {
-          type: NOTIFICATION_TYPES.REPOST,
-          relPostId: postId,
-          senderId: userId,
-          recepientId: ref.author.id,
-        },
+        type: NOTIFICATION_TYPES.REPOST,
+        relPostId: postId,
+        senderId: userId,
+        recepientId: ref.author.id,
       },
     });
 

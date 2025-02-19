@@ -25,4 +25,5 @@ export type Notification = {
   relPostId?: string;
   senderId: string;
   recepientId: string;
+  content?: string;
 };

@@ -78,16 +78,25 @@ app.delete("/posts/:postId/like", isAuthenticated, async (c) => {
       ...getPostParams(userId),
     });
 
-    await prisma.notification.delete({
+    await prisma.notification.deleteMany({
       where: {
-        type_senderId_recepientId_relPostId: {
-          type: NOTIFICATION_TYPES.LIKE,
-          senderId: userId,
-          recepientId: ref.userId,
-          relPostId: postId,
-        },
+        type: NOTIFICATION_TYPES.LIKE,
+        senderId: userId,
+        relPostId: postId,
+        recepientId: ref.userId,
       },
     });
+
+    // await prisma.notification.delete({
+    //   where: {
+    //     type_senderId_recepientId_relPostId: {
+    //       type: NOTIFICATION_TYPES.LIKE,
+    //       senderId: userId,
+    //       recepientId: ref.userId,
+    //       relPostId: postId,
+    //     },
+    //   },
+    // });
 
     return c.json({ success: true, data: { ref } }, 200);
   } catch (e) {

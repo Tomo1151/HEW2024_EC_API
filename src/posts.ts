@@ -8,6 +8,7 @@ import isAuthenticated from "./middlewares/isAuthenticated.js";
 import {
   deleteBlobByName,
   getUserIdFromCookie,
+  sendNotification,
   updatePostImpressionCount,
   uploadImages,
 } from "./utils.js";
@@ -136,6 +137,8 @@ app.get(
         query.where = {
           AND: [
             { replied_ref: null },
+            { is_active: true },
+            { author: { is_active: true } },
             {
               created_at: before
                 ? { lt: targetPost.created_at }
@@ -148,6 +151,10 @@ app.get(
       } else {
         query.where = {
           replied_ref: null,
+          is_active: true,
+          author: {
+            is_active: true,
+          },
         };
         query.orderBy = { created_at: "desc" };
       }
@@ -231,6 +238,10 @@ app.get(
         delete query.where.replied_ref;
       }
 
+      if ("is_active" in query.where) {
+        delete query.where.is_active;
+      }
+
       if ("tags" in query.where) {
         delete query.where.tags;
       }
@@ -297,6 +308,19 @@ app.get(
           },
         };
       }
+
+      query.where = {
+        ...query.where,
+        post: {
+          is_active: true,
+          author: {
+            is_active: true,
+          },
+        },
+        user: {
+          is_active: true,
+        },
+      };
 
       // console.dir(query, { depth: null });
 
@@ -402,10 +426,17 @@ app.get("/:id", async (c) => {
     const post = await prisma.post.findUniqueOrThrow({
       where: {
         id: c.req.param("id"),
+        author: {
+          is_active: true,
+        },
       },
       ...getPostParams(userId),
     });
     await updatePostImpressionCount(post.id);
+
+    if (!post.is_active && post.author.id !== userId) {
+      throw new Error("Post is not active");
+    }
 
     if (post.product) {
       const productRating = await prisma.productRating.groupBy({
@@ -504,8 +535,8 @@ app.post(
       // 画像をアップロード
       const blobNames: string[] = await uploadImages(images);
 
-      //  投稿を作成 (トランザクション: タグの作成 -> 投稿の作成)
-      const post = await prisma.$transaction(async (prisma) => {
+      // 投稿を作成 (トランザクション: タグの作成 -> 投稿の作成)
+      const { post, ref } = await prisma.$transaction(async (prisma) => {
         const tags = await Promise.all(
           tagNames.map((tag) =>
             prisma.tag.upsert({
@@ -544,11 +575,15 @@ app.post(
               },
             },
           },
+          include: {
+            author: true,
+          },
         });
 
         // @TODO 通知の作成
+        let ref;
         if (quoted_ref) {
-          await prisma.post.update({
+          ref = await prisma.post.update({
             where: {
               id: quoted_ref,
             },
@@ -564,7 +599,7 @@ app.post(
         }
 
         if (replied_ref) {
-          await prisma.post.update({
+          ref = await prisma.post.update({
             where: {
               id: replied_ref,
             },
@@ -579,8 +614,19 @@ app.post(
           });
         }
 
-        return post;
+        return { post, ref };
       });
+
+      if (ref) {
+        await sendNotification({
+          type: quoted_ref
+            ? NOTIFICATION_TYPES.QUOTED
+            : NOTIFICATION_TYPES.COMMENT,
+          relPostId: post.id,
+          senderId: userId,
+          recepientId: ref.author.id,
+        });
+      }
 
       return c.json({ success: true, data: post }, 201);
     } catch (error) {
@@ -640,17 +686,47 @@ app.put(
 app.delete("/:id", isAuthenticated, async (c) => {
   const userId = c.get("jwtPayload").sub;
   try {
+    const user = await prisma.user.findUniqueOrThrow({
+      where: {
+        id: userId,
+      },
+      select: {
+        is_superuser: true,
+      },
+    });
+
     const post = await prisma.post.findUniqueOrThrow({
       where: {
         id: c.req.param("id"),
       },
       include: {
+        author: true,
         product: true,
         images: true,
       },
     });
 
-    if (post.userId !== userId) {
+    if (user.is_superuser && post.userId !== userId) {
+      await prisma.post.update({
+        where: {
+          id: c.req.param("id"),
+        },
+        data: {
+          is_active: false,
+        },
+      });
+
+      await sendNotification({
+        type: NOTIFICATION_TYPES.REPORTED,
+        relPostId: post.id,
+        senderId: userId,
+        recepientId: post.userId,
+      });
+
+      return c.json({ success: true }, 200);
+    }
+
+    if (post.userId !== userId && !user.is_superuser) {
       return c.json(
         {
           success: false,
@@ -702,16 +778,16 @@ app.delete("/:id", isAuthenticated, async (c) => {
         },
       });
 
-      await prisma.notification.delete({
-        where: {
-          type_senderId_recepientId_relPostId: {
-            type: NOTIFICATION_TYPES.COMMENT,
-            senderId: userId,
-            recepientId: ref.author.id,
-            relPostId: post.repliedId,
-          },
-        },
-      });
+      // await prisma.notification.delete({
+      //   where: {
+      //     type_senderId_recepientId_relPostId: {
+      //       type: NOTIFICATION_TYPES.COMMENT,
+      //       senderId: userId,
+      //       recepientId: ref.author.id,
+      //       relPostId: post.repliedId,
+      //     },
+      //   },
+      // });
     }
 
     if (post.quotedId) {

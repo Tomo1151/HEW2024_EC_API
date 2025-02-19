@@ -68,7 +68,7 @@ app.post(
       return c.json({ success: false, error: "Internal server error" }, 500);
     }
 
-    if (!user) {
+    if (!user || !user.is_active) {
       return c.json(
         { success: false, error: "Invalid email or password" },
         401
@@ -236,10 +236,12 @@ app.post("/refresh", async (c) => {
         homepage_link: true,
         icon_link: true,
         created_at: true,
+        is_active: true,
+        is_superuser: true,
       },
     });
 
-    if (!user) {
+    if (!user || !user.is_active) {
       return c.json({ success: false, error: "User not found" }, 404);
     }
 

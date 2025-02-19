@@ -9,9 +9,11 @@ import isAuthenticated from "./middlewares/isAuthenticated.js";
 import {
   deleteBlobByName,
   generateBlobSASUrl,
+  sendNotification,
   uploadBlobData,
   uploadImages,
 } from "./utils.js";
+import { NOTIFICATION_TYPES } from "../constants/notifications.js";
 
 // MARK: 定数宣言
 const app: Hono = new Hono();
@@ -233,6 +235,26 @@ app.post(
         where: { productId_userId: { productId: id, userId } },
         create: { productId: id, userId, value: value },
         update: { value: value },
+        select: {
+          product: {
+            select: {
+              post: {
+                select: {
+                  id: true,
+                  author: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      await sendNotification({
+        type: NOTIFICATION_TYPES.RATING,
+        senderId: userId,
+        recepientId: rating.product.post.author.id,
+        relPostId: rating.product.post.id,
+        content: value.toString(),
       });
 
       return c.json({ success: true, data: rating }, 200);

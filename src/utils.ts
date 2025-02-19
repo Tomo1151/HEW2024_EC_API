@@ -99,6 +99,7 @@ export async function getUserIdFromCookie(c: Context): Promise<string> {
 export async function sendNotification(
   notification: Notification
 ): Promise<void> {
+  // if (notification.recepientId === notification.senderId) return;
   await prisma.notification.create({
     data: notification,
   });

@@ -72,7 +72,7 @@ app.get("/:username", async (c) => {
   try {
     const username = c.req.param("username");
     user = await prisma.user.findUniqueOrThrow({
-      where: { username },
+      where: { username, is_active: true },
       select: {
         username: true,
         nickname: true,
@@ -138,12 +138,12 @@ app.put(
 
     const username = c.req.param("username");
     const { nickname, bio, homepage_link, icon } = c.req.valid("form");
-    console.log({ nickname, bio, homepage_link, icon });
+    // console.log({ nickname, bio, homepage_link, icon });
 
     try {
       // リクエストユーザーが編集しようとしているユーザーか確認
       const reqUser = await prisma.user.findUniqueOrThrow({
-        where: { id: userId },
+        where: { id: userId, is_active: true },
         select: { username: true, icon_link: true },
       });
 
@@ -210,6 +210,15 @@ app.get(
     const before: string = c.req.valid("query").before;
 
     try {
+      if (
+        !(await prisma.user.findFirst({ where: { username, is_active: true } }))
+      ) {
+        return c.json(
+          { success: false, error: "User not found", data: null },
+          404
+        );
+      }
+
       let targetPost;
       if (before) {
         targetPost = await prisma.post.findUniqueOrThrow({
@@ -221,13 +230,18 @@ app.get(
       const where = targetPost
         ? {
             AND: [
-              { author: { username } },
+              { author: { username, is_active: true } },
+              { is_active: true },
               { replied_ref: null },
               { created_at: { lt: targetPost.created_at } },
             ],
           }
         : {
-            AND: [{ author: { username } }, { replied_ref: null }],
+            AND: [
+              { author: { username, is_active: true } },
+              { is_active: true },
+              { replied_ref: null },
+            ],
           };
 
       const posts = await prisma.post.findMany({
@@ -313,6 +327,15 @@ app.get(
     const before: string = c.req.valid("query").before;
 
     try {
+      if (
+        !(await prisma.user.findFirst({ where: { username, is_active: true } }))
+      ) {
+        return c.json(
+          { success: false, error: "User not found", data: null },
+          404
+        );
+      }
+
       let targetPost;
       if (before) {
         targetPost = await prisma.post.findUniqueOrThrow({
@@ -323,7 +346,8 @@ app.get(
       const posts = await prisma.post.findMany({
         where: {
           AND: [
-            { author: { username } },
+            { author: { username, is_active: true } },
+            { is_active: true },
             { replied_ref: null },
             targetPost
               ? {
@@ -412,6 +436,15 @@ app.get(
     const userId: string = await getUserIdFromCookie(c);
     const before: string = c.req.valid("query").before;
     try {
+      if (
+        !(await prisma.user.findFirst({ where: { username, is_active: true } }))
+      ) {
+        return c.json(
+          { success: false, error: "User not found", data: null },
+          404
+        );
+      }
+
       let targetPost;
       if (before) {
         targetPost = await prisma.post.findUniqueOrThrow({
@@ -428,7 +461,7 @@ app.get(
       }
 
       const { id }: { id: string } = await prisma.user.findUniqueOrThrow({
-        where: { username },
+        where: { username, is_active: true },
         select: { id: true },
       });
 
@@ -437,6 +470,8 @@ app.get(
           AND: [
             {
               userId: id,
+              user: { is_active: true },
+              post: { is_active: true },
               created_at: targetPost
                 ? { lt: targetPost.likes[0].created_at }
                 : {},
@@ -512,10 +547,10 @@ app.delete("/:username", isAuthenticated, async (c) => {
     // リクエストユーザーが削除しようとしているユーザーか確認
     const reqUser = await prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { username: true },
+      select: { username: true, is_superuser: true },
     });
 
-    if (reqUser.username !== username) {
+    if (reqUser.username !== username && !reqUser.is_superuser) {
       return c.json(
         {
           success: false,

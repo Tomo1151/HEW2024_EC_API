@@ -8,6 +8,7 @@ import isAuthenticated from "./middlewares/isAuthenticated.js";
 import {
   deleteBlobByName,
   getUserIdFromCookie,
+  sendNotification,
   updatePostImpressionCount,
   uploadImages,
 } from "./utils.js";
@@ -135,8 +136,9 @@ app.get(
       if (targetPost) {
         query.where = {
           AND: [
-            { author: { is_active: true } },
             { replied_ref: null },
+            { is_active: true },
+            { author: { is_active: true } },
             {
               created_at: before
                 ? { lt: targetPost.created_at }
@@ -149,6 +151,7 @@ app.get(
       } else {
         query.where = {
           replied_ref: null,
+          is_active: true,
           author: {
             is_active: true,
           },
@@ -235,6 +238,10 @@ app.get(
         delete query.where.replied_ref;
       }
 
+      if ("is_active" in query.where) {
+        delete query.where.is_active;
+      }
+
       if ("tags" in query.where) {
         delete query.where.tags;
       }
@@ -305,6 +312,7 @@ app.get(
       query.where = {
         ...query.where,
         post: {
+          is_active: true,
           author: {
             is_active: true,
           },
@@ -563,11 +571,14 @@ app.post(
               },
             },
           },
+          include: {
+            author: true,
+          },
         });
 
         // @TODO 通知の作成
         if (quoted_ref) {
-          await prisma.post.update({
+          const quoted = await prisma.post.update({
             where: {
               id: quoted_ref,
             },
@@ -580,10 +591,17 @@ app.post(
               author: true,
             },
           });
+
+          await sendNotification({
+            type: NOTIFICATION_TYPES.QUOTED,
+            relPostId: post.id,
+            senderId: userId,
+            recepientId: quoted.author.id,
+          });
         }
 
         if (replied_ref) {
-          await prisma.post.update({
+          const ref = await prisma.post.update({
             where: {
               id: replied_ref,
             },
@@ -595,6 +613,13 @@ app.post(
             select: {
               author: true,
             },
+          });
+
+          await sendNotification({
+            type: NOTIFICATION_TYPES.COMMENT,
+            relPostId: post.id,
+            senderId: userId,
+            recepientId: ref.author.id,
           });
         }
 
@@ -673,10 +698,29 @@ app.delete("/:id", isAuthenticated, async (c) => {
         id: c.req.param("id"),
       },
       include: {
+        author: true,
         product: true,
         images: true,
       },
     });
+
+    if (user.is_superuser && post.userId !== userId) {
+      await prisma.post.update({
+        where: {
+          id: c.req.param("id"),
+        },
+        data: {
+          is_active: false,
+        },
+      });
+
+      await sendNotification({
+        type: NOTIFICATION_TYPES.REPORTED,
+        relPostId: post.id,
+        senderId: userId,
+        recepientId: post.userId,
+      });
+    }
 
     if (post.userId !== userId && !user.is_superuser) {
       return c.json(
@@ -730,16 +774,16 @@ app.delete("/:id", isAuthenticated, async (c) => {
         },
       });
 
-      await prisma.notification.delete({
-        where: {
-          type_senderId_recepientId_relPostId: {
-            type: NOTIFICATION_TYPES.COMMENT,
-            senderId: userId,
-            recepientId: ref.author.id,
-            relPostId: post.repliedId,
-          },
-        },
-      });
+      // await prisma.notification.delete({
+      //   where: {
+      //     type_senderId_recepientId_relPostId: {
+      //       type: NOTIFICATION_TYPES.COMMENT,
+      //       senderId: userId,
+      //       recepientId: ref.author.id,
+      //       relPostId: post.repliedId,
+      //     },
+      //   },
+      // });
     }
 
     if (post.quotedId) {

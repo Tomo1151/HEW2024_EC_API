@@ -236,10 +236,11 @@ app.post("/refresh", async (c) => {
         homepage_link: true,
         icon_link: true,
         created_at: true,
+        is_active: true,
       },
     });
 
-    if (!user) {
+    if (!user || !user.is_active) {
       return c.json({ success: false, error: "User not found" }, 404);
     }
 

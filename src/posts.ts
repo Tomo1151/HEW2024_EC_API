@@ -531,8 +531,8 @@ app.post(
       // 画像をアップロード
       const blobNames: string[] = await uploadImages(images);
 
-      //  投稿を作成 (トランザクション: タグの作成 -> 投稿の作成)
-      const post = await prisma.$transaction(async (prisma) => {
+      // 投稿を作成 (トランザクション: タグの作成 -> 投稿の作成)
+      const { post, ref } = await prisma.$transaction(async (prisma) => {
         const tags = await Promise.all(
           tagNames.map((tag) =>
             prisma.tag.upsert({
@@ -577,8 +577,9 @@ app.post(
         });
 
         // @TODO 通知の作成
+        let ref;
         if (quoted_ref) {
-          const quoted = await prisma.post.update({
+          ref = await prisma.post.update({
             where: {
               id: quoted_ref,
             },
@@ -591,17 +592,10 @@ app.post(
               author: true,
             },
           });
-
-          await sendNotification({
-            type: NOTIFICATION_TYPES.QUOTED,
-            relPostId: post.id,
-            senderId: userId,
-            recepientId: quoted.author.id,
-          });
         }
 
         if (replied_ref) {
-          const ref = await prisma.post.update({
+          ref = await prisma.post.update({
             where: {
               id: replied_ref,
             },
@@ -614,17 +608,21 @@ app.post(
               author: true,
             },
           });
-
-          await sendNotification({
-            type: NOTIFICATION_TYPES.COMMENT,
-            relPostId: post.id,
-            senderId: userId,
-            recepientId: ref.author.id,
-          });
         }
 
-        return post;
+        return { post, ref };
       });
+
+      if (ref) {
+        await sendNotification({
+          type: quoted_ref
+            ? NOTIFICATION_TYPES.QUOTED
+            : NOTIFICATION_TYPES.COMMENT,
+          relPostId: post.id,
+          senderId: userId,
+          recepientId: ref.author.id,
+        });
+      }
 
       return c.json({ success: true, data: post }, 201);
     } catch (error) {
@@ -720,6 +718,8 @@ app.delete("/:id", isAuthenticated, async (c) => {
         senderId: userId,
         recepientId: post.userId,
       });
+
+      return c.json({ success: true }, 200);
     }
 
     if (post.userId !== userId && !user.is_superuser) {

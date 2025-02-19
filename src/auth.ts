@@ -237,6 +237,7 @@ app.post("/refresh", async (c) => {
         icon_link: true,
         created_at: true,
         is_active: true,
+        is_superuser: true,
       },
     });
 

@@ -272,9 +272,9 @@ model RefreshToken {
 // MARK: Model Notification
 model Notification {
   id          String   @id @unique @default(cuid())
-  // type 0: follow, 1: like, 2: repost, 3: comment, 4: purchase, 5: license
+  // type 0: follow, 1: like, 2: repost, 3: comment, 4: purchase, 5: license, 6: product_rating, 7: reported, 8: quoted
   type        Int
-  // content            String
+  content     String?  // Added content field
   is_read     Boolean  @default(false)
   rel_post    Post?    @relation("asNotification", fields: [relPostId], references: [id], onDelete: Cascade)
   recepient   User     @relation("asRecepient", fields: [recepientId], references: [id], onDelete: Cascade)
@@ -286,7 +286,7 @@ model Notification {
   recepientId String
   relPostId   String?
 
-  @@unique([type, senderId, recepientId, relPostId])
+  // @@unique([type, senderId, recepientId, relPostId])
   @@map("notifications")
 }
 

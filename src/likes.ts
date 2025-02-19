@@ -78,6 +78,15 @@ app.delete("/posts/:postId/like", isAuthenticated, async (c) => {
       ...getPostParams(userId),
     });
 
+    await prisma.notification.deleteMany({
+      where: {
+        type: NOTIFICATION_TYPES.LIKE,
+        senderId: userId,
+        relPostId: postId,
+        recepientId: ref.userId,
+      },
+    });
+
     // await prisma.notification.delete({
     //   where: {
     //     type_senderId_recepientId_relPostId: {

@@ -76,16 +76,14 @@ app.delete("/posts/:postId/repost", isAuthenticated, async (c) => {
       ...getPostParams(userId),
     });
 
-    // await prisma.notification.delete({
-    //   where: {
-    //     type_senderId_recepientId_relPostId: {
-    //       type: NOTIFICATION_TYPES.REPOST,
-    //       relPostId: postId,
-    //       senderId: userId,
-    //       recepientId: ref.author.id,
-    //     },
-    //   },
-    // });
+    await prisma.notification.deleteMany({
+      where: {
+        type: NOTIFICATION_TYPES.REPOST,
+        relPostId: postId,
+        senderId: userId,
+        recepientId: ref.author.id,
+      },
+    });
 
     return c.json({ success: true, data: { ref } }, 200);
   } catch (e) {

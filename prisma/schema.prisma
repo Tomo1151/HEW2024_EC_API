@@ -16,28 +16,30 @@ datasource db {
 
 // MARK: Model User
 model User {
-  id                 String             @id @unique @default(cuid())
-  username           String             @unique
-  nickname           String?
-  email              String             @unique
-  bio                String?
-  hashed_password    String
-  homepage_link      String?
-  icon_link          String?
-  created_at         DateTime           @default(now())
-  updated_at         DateTime           @default(now()) @updatedAt
-  posts              Post[]
-  cart_items         CartItem[]
-  purchases          Purchase[]
-  followers          Follow[]           @relation("asFollowee")
-  followees          Follow[]           @relation("asFollower")
-  reposts            Repost[]
-  likes              Like[]
-  sent_notification  Notification[]     @relation("asSender")
-  received_notification Notification[] @relation("asRecepient")
-  licensed_downloads LicensedDownload[]
-  refresh_token      RefreshToken?
-  product_ratings    ProductRating[]
+  id                    String             @id @unique @default(cuid())
+  username              String             @unique
+  nickname              String?
+  email                 String             @unique
+  bio                   String?
+  hashed_password       String
+  homepage_link         String?
+  icon_link             String?
+  is_superuser          Boolean            @default(false)
+  is_active             Boolean            @default(true)
+  created_at            DateTime           @default(now())
+  updated_at            DateTime           @default(now()) @updatedAt
+  posts                 Post[]
+  cart_items            CartItem[]
+  purchases             Purchase[]
+  followers             Follow[]           @relation("asFollowee")
+  followees             Follow[]           @relation("asFollower")
+  reposts               Repost[]
+  likes                 Like[]
+  sent_notification     Notification[]     @relation("asSender")
+  received_notification Notification[]     @relation("asRecepient")
+  licensed_downloads    LicensedDownload[]
+  refresh_token         RefreshToken?
+  product_ratings       ProductRating[]
 
   @@map("users")
 }
@@ -50,6 +52,7 @@ model Post {
   like_count    Int            @default(0)
   ref_count     Int            @default(0)
   comment_count Int            @default(0)
+  is_active     Boolean        @default(true)
   quote_count   Int            @default(0)
   created_at    DateTime       @default(now())
   updated_at    DateTime       @default(now()) @updatedAt
@@ -84,7 +87,7 @@ model PostImage {
 model DailyPostImpression {
   postId     String
   impression Int      @default(0)
-  dateKey    String   // yyyy-mm-dd
+  dateKey    String // yyyy-mm-dd
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
 
@@ -94,18 +97,18 @@ model DailyPostImpression {
 
 // MARK: Model Product
 model Product {
-  id             String     @id @unique @default(cuid())
-  name           String
-  product_link   String?    @unique
-  thumbnail_link String?    @unique
-  live_release   Boolean
-  release_date   DateTime   @default(now())
-  created_at     DateTime   @default(now())
-  updated_at     DateTime   @default(now()) @updatedAt
-  post           Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
-  cart_items     CartItem[]
-  postId         String     @unique
-  Purchase       Purchase[]
+  id              String          @id @unique @default(cuid())
+  name            String
+  product_link    String?         @unique
+  thumbnail_link  String?         @unique
+  live_release    Boolean
+  release_date    DateTime        @default(now())
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @default(now()) @updatedAt
+  post            Post            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  cart_items      CartItem[]
+  postId          String          @unique
+  Purchase        Purchase[]
   product_ratings ProductRating[]
   price_histories PriceHistory[]
 
@@ -139,12 +142,12 @@ model Repost {
 
 // MARK: Model Like
 model Like {
-  id     String @id @unique @default(cuid())
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  created_at   DateTime     @default(now())
-  userId String
-  postId String
+  id         String   @id @unique @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  created_at DateTime @default(now())
+  userId     String
+  postId     String
 
   @@unique([userId, postId])
   @@map("likes")
@@ -191,7 +194,7 @@ model CartItem {
 model Purchase {
   id             String   @id @unique @default(cuid())
   purchase_price Int
-  dateKey    String   // yyyy-mm-dd
+  dateKey        String // yyyy-mm-dd
   created_at     DateTime @default(now())
   updated_at     DateTime @default(now()) @updatedAt
   product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -204,14 +207,14 @@ model Purchase {
 
 // MARK: Model ProductRating
 model ProductRating {
-  id        String @id @unique @default(cuid())
-  value     Float
+  id         String   @id @unique @default(cuid())
+  value      Float
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId String
-  userId    String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  String
+  userId     String
 
   @@unique([productId, userId])
   @@map("product_ratings")
@@ -219,10 +222,10 @@ model ProductRating {
 
 // MARK: Model Follow
 model Follow {
-  id         String @id @unique @default(cuid())
-  follower   User   @relation("asFollower", fields: [followerId], references: [id], onDelete: Cascade)
-  followee   User   @relation("asFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
-  dateKey    String   // yyyy-mm-dd
+  id         String   @id @unique @default(cuid())
+  follower   User     @relation("asFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee   User     @relation("asFollowee", fields: [followeeId], references: [id], onDelete: Cascade)
+  dateKey    String // yyyy-mm-dd
   created_at DateTime @default(now())
   followerId String
   followeeId String
@@ -268,20 +271,20 @@ model RefreshToken {
 
 // MARK: Model Notification
 model Notification {
-  id                 String             @id @unique @default(cuid())
+  id          String   @id @unique @default(cuid())
   // type 0: follow, 1: like, 2: repost, 3: comment, 4: purchase, 5: license
-  type               Int
+  type        Int
   // content            String
-  is_read            Boolean            @default(false)
-  rel_post           Post?              @relation("asNotification", fields: [relPostId], references: [id], onDelete: Cascade)
-  recepient          User               @relation("asRecepient", fields: [recepientId], references: [id], onDelete: Cascade)
-  sender             User               @relation("asSender", fields: [senderId], references: [id], onDelete: Cascade)
-  created_at         DateTime           @default(now())
-  updated_at         DateTime           @default(now()) @updatedAt
+  is_read     Boolean  @default(false)
+  rel_post    Post?    @relation("asNotification", fields: [relPostId], references: [id], onDelete: Cascade)
+  recepient   User     @relation("asRecepient", fields: [recepientId], references: [id], onDelete: Cascade)
+  sender      User     @relation("asSender", fields: [senderId], references: [id], onDelete: Cascade)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now()) @updatedAt
   // user_notifications UserNotification[]
-  senderId           String
-  recepientId        String
-  relPostId          String?
+  senderId    String
+  recepientId String
+  relPostId   String?
 
   @@unique([type, senderId, recepientId, relPostId])
   @@map("notifications")

@@ -12,6 +12,7 @@ export const getPostParams = (userId: string) => ({
     content: true,
     created_at: true,
     id: true,
+    is_active: true,
     like_count: true,
     likes: {
       where: {

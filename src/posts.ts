@@ -434,6 +434,10 @@ app.get("/:id", async (c) => {
     });
     await updatePostImpressionCount(post.id);
 
+    if (!post.is_active && post.author.id !== userId) {
+      throw new Error("Post is not active");
+    }
+
     if (post.product) {
       const productRating = await prisma.productRating.groupBy({
         by: ["productId"],

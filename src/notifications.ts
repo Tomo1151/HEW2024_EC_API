@@ -63,6 +63,7 @@ app.get(
           id: true,
           type: true,
           is_read: true,
+          content: true,
           sender: {
             select: {
               username: true,

@@ -234,6 +234,7 @@ app.get(
                       username: true,
                       nickname: true,
                       icon_link: true,
+                      is_superuser: true,
                     },
                   },
                   id: true,

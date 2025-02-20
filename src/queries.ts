@@ -6,6 +6,7 @@ export const getPostParams = (userId: string) => ({
         username: true,
         nickname: true,
         icon_link: true,
+        is_superuser: true,
       },
     },
     comment_count: true,

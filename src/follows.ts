@@ -45,6 +45,7 @@ app.get("/:username/follows", async (c) => {
         nickname: true,
         bio: true,
         icon_link: true,
+        is_superuser: true,
         followers: {
           where: {
             followerId: userId,
@@ -101,6 +102,7 @@ app.get("/:username/followers", async (c) => {
         nickname: true,
         bio: true,
         icon_link: true,
+        is_superuser: true,
         followers: {
           where: {
             followerId: userId,

@@ -53,6 +53,7 @@ app.get("/items", isAuthenticated, async (c) => {
                     username: true,
                     nickname: true,
                     icon_link: true,
+                    is_superuser: true,
                     followers: {
                       where: {
                         followerId: userId,

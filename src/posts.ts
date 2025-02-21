@@ -78,12 +78,18 @@ const getLatestPostsSchema = z.object({
   tagName: z.string().optional(),
   after: z.string(),
   live: z.literal("true").optional(),
+  type: z
+    .union([z.literal("latest"), z.literal("following"), z.literal("product")])
+    .optional(),
 });
 
 const getOldPostsSchema = z.object({
   tagName: z.string().optional(),
   before: z.string(),
   live: z.literal("true").optional(),
+  type: z
+    .union([z.literal("latest"), z.literal("following"), z.literal("product")])
+    .optional(),
 });
 
 const geTimelinePostsSchema = getLatestPostsSchema.or(getOldPostsSchema);
@@ -103,8 +109,14 @@ app.get(
       after,
       before,
       live,
-    }: { tagName?: string; after?: string; before?: string; live?: string } =
-      c.req.valid("query");
+      type,
+    }: {
+      tagName?: string;
+      after?: string;
+      before?: string;
+      live?: string;
+      type?: string;
+    } = c.req.valid("query");
 
     const targetId = before ? before : after;
 
@@ -145,11 +157,13 @@ app.get(
                 : { gt: targetPost.created_at },
             },
           ],
+          NOT: type === "product" ? { product: null } : {},
         };
 
         if (before) query.orderBy = { created_at: "desc" };
       } else {
         query.where = {
+          NOT: type === "product" ? { product: null } : {},
           replied_ref: null,
           is_active: true,
           author: {
@@ -192,16 +206,20 @@ app.get(
               }
             : {
                 ...query.where,
-                tags: {
-                  some: {
-                    tag: {
-                      name: tagName,
-                    },
-                  },
-                },
+                tags:
+                  type === "product"
+                    ? {}
+                    : {
+                        some: {
+                          tag: {
+                            name: tagName,
+                          },
+                        },
+                      },
               };
       }
-
+      console.log("Post Query: ", tagName);
+      console.dir(query, { depth: null });
       // postsを取得
       const posts = await prisma.post.findMany({
         ...getPostParams(userId),
@@ -238,6 +256,10 @@ app.get(
         delete query.where.replied_ref;
       }
 
+      if ("product" in query.where) {
+        delete query.where.product;
+      }
+
       if ("is_active" in query.where) {
         delete query.where.is_active;
       }
@@ -258,6 +280,10 @@ app.get(
         };
       }
 
+      if ("NOT" in query.where && type === "product") {
+        delete query.where.NOT;
+      }
+
       if ("live_link" in query.where) {
         delete query.where.live_link;
       }
@@ -267,62 +293,79 @@ app.get(
           tagName === "フォロー中"
             ? {
                 ...query.where,
-                post: {
-                  author: {
-                    OR: [
-                      {
-                        followers: {
-                          some: {
-                            followerId: userId,
-                          },
-                        },
-                      },
-                      {
-                        id: userId,
-                      },
-                    ],
+                OR: [
+                  {
+                    user: {
+                      is_active: true,
+                      followers: { some: { followerId: userId } },
+                    },
                   },
-                },
+                  {
+                    post: {
+                      is_active: true,
+                      author: {
+                        is_active: true,
+                        followers: { some: { followerId: userId } },
+                      },
+                    },
+                  },
+                ],
+                NOT: [
+                  type === "product" ? { product: null } : {},
+                  live ? { live_link: null } : {},
+                ],
               }
             : {
                 ...query.where,
                 post: {
-                  tags: {
-                    some: {
-                      tag: {
-                        name: tagName,
+                  is_active: true,
+                  author: { is_active: true },
+                  live_link: live ? { not: null } : {},
+                  tags:
+                    type === "product"
+                      ? {}
+                      : {
+                          some: { tag: { name: tagName } },
+                        },
+                  NOT: [
+                    type === "product" ? { product: null } : {},
+                    live ? { live_link: null } : {},
+                  ],
+                },
+                OR: [
+                  {
+                    user: {
+                      is_active: true,
+                      followers: { some: { followerId: userId } },
+                    },
+                  },
+                  {
+                    post: {
+                      author: {
+                        followers: { some: { followerId: userId } },
                       },
                     },
                   },
-                },
+                ],
               };
-      }
-
-      if (live) {
+      } else {
         query.where = {
           ...query.where,
           post: {
-            live_link: {
-              not: null,
+            is_active: true,
+            author: {
+              is_active: true,
             },
+            NOT: live ? { live_link: null } : {},
+          },
+          user: {
+            is_active: true,
           },
         };
       }
 
-      query.where = {
-        ...query.where,
-        post: {
-          is_active: true,
-          author: {
-            is_active: true,
-          },
-        },
-        user: {
-          is_active: true,
-        },
-      };
-
-      // console.dir(query, { depth: null });
+      console.log("Repost Query: ", tagName);
+      console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({
         select: {

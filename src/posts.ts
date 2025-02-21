@@ -78,12 +78,14 @@ const getLatestPostsSchema = z.object({
   tagName: z.string().optional(),
   after: z.string(),
   live: z.literal("true").optional(),
+  type: z.literal("product").optional(),
 });
 
 const getOldPostsSchema = z.object({
   tagName: z.string().optional(),
   before: z.string(),
   live: z.literal("true").optional(),
+  type: z.literal("product").optional(),
 });
 
 const geTimelinePostsSchema = getLatestPostsSchema.or(getOldPostsSchema);
@@ -103,8 +105,14 @@ app.get(
       after,
       before,
       live,
-    }: { tagName?: string; after?: string; before?: string; live?: string } =
-      c.req.valid("query");
+      type,
+    }: {
+      tagName?: string;
+      after?: string;
+      before?: string;
+      live?: string;
+      type?: string;
+    } = c.req.valid("query");
 
     const targetId = before ? before : after;
 
@@ -145,11 +153,13 @@ app.get(
                 : { gt: targetPost.created_at },
             },
           ],
+          NOT: type ? { product: null } : {},
         };
 
         if (before) query.orderBy = { created_at: "desc" };
       } else {
         query.where = {
+          NOT: type ? { product: null } : {},
           replied_ref: null,
           is_active: true,
           author: {
@@ -170,7 +180,7 @@ app.get(
 
       // console.log("tags: ", tagName);
 
-      if (tagName && tagName !== "最新の投稿") {
+      if (tagName && tagName !== "最新の投稿" && type) {
         query.where =
           tagName === "フォロー中"
             ? {
@@ -192,17 +202,19 @@ app.get(
               }
             : {
                 ...query.where,
-                tags: {
-                  some: {
-                    tag: {
-                      name: tagName,
+                tags: type
+                  ? {}
+                  : {
+                      some: {
+                        tag: {
+                          name: tagName,
+                        },
+                      },
                     },
-                  },
-                },
               };
       }
-      // console.log("Post Query: ", tagName);
-      // console.dir(query, { depth: null });
+      console.log("Post Query: ", tagName);
+      console.dir(query, { depth: null });
       // postsを取得
       const posts = await prisma.post.findMany({
         ...getPostParams(userId),
@@ -239,6 +251,10 @@ app.get(
         delete query.where.replied_ref;
       }
 
+      if ("product" in query.where) {
+        delete query.where.product;
+      }
+
       if ("is_active" in query.where) {
         delete query.where.is_active;
       }
@@ -257,6 +273,10 @@ app.get(
             ? { lt: targetPost.created_at }
             : { gt: targetPost.created_at },
         };
+      }
+
+      if ("NOT" in query.where && type) {
+        delete query.where.NOT;
       }
 
       if ("live_link" in query.where) {
@@ -286,6 +306,7 @@ app.get(
                       },
                     ],
                   },
+                  NOT: type ? { product: null } : {},
                 },
               }
             : {
@@ -295,13 +316,16 @@ app.get(
                   author: {
                     is_active: true,
                   },
-                  tags: {
-                    some: {
-                      tag: {
-                        name: tagName,
+                  tags: type
+                    ? {}
+                    : {
+                        some: {
+                          tag: {
+                            name: tagName,
+                          },
+                        },
                       },
-                    },
-                  },
+                  NOT: type ? { product: null } : {},
                 },
               };
       }
@@ -317,8 +341,8 @@ app.get(
         };
       }
 
-      // console.log("Repost Query: ", tagName);
-      // console.dir(query, { depth: null });
+      console.log("Repost Query: ", tagName);
+      console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({
         select: {

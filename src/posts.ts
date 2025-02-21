@@ -78,14 +78,18 @@ const getLatestPostsSchema = z.object({
   tagName: z.string().optional(),
   after: z.string(),
   live: z.literal("true").optional(),
-  type: z.literal("product").optional(),
+  type: z
+    .union([z.literal("latest"), z.literal("following"), z.literal("product")])
+    .optional(),
 });
 
 const getOldPostsSchema = z.object({
   tagName: z.string().optional(),
   before: z.string(),
   live: z.literal("true").optional(),
-  type: z.literal("product").optional(),
+  type: z
+    .union([z.literal("latest"), z.literal("following"), z.literal("product")])
+    .optional(),
 });
 
 const geTimelinePostsSchema = getLatestPostsSchema.or(getOldPostsSchema);
@@ -153,13 +157,13 @@ app.get(
                 : { gt: targetPost.created_at },
             },
           ],
-          NOT: type ? { product: null } : {},
+          NOT: type === "product" ? { product: null } : {},
         };
 
         if (before) query.orderBy = { created_at: "desc" };
       } else {
         query.where = {
-          NOT: type ? { product: null } : {},
+          NOT: type === "product" ? { product: null } : {},
           replied_ref: null,
           is_active: true,
           author: {
@@ -180,7 +184,7 @@ app.get(
 
       // console.log("tags: ", tagName);
 
-      if (tagName && tagName !== "最新の投稿" && type) {
+      if (tagName && tagName !== "最新の投稿") {
         query.where =
           tagName === "フォロー中"
             ? {
@@ -202,15 +206,16 @@ app.get(
               }
             : {
                 ...query.where,
-                tags: type
-                  ? {}
-                  : {
-                      some: {
-                        tag: {
-                          name: tagName,
+                tags:
+                  type === "product"
+                    ? {}
+                    : {
+                        some: {
+                          tag: {
+                            name: tagName,
+                          },
                         },
                       },
-                    },
               };
       }
       console.log("Post Query: ", tagName);
@@ -275,7 +280,7 @@ app.get(
         };
       }
 
-      if ("NOT" in query.where && type) {
+      if ("NOT" in query.where && type === "product") {
         delete query.where.NOT;
       }
 
@@ -288,55 +293,73 @@ app.get(
           tagName === "フォロー中"
             ? {
                 ...query.where,
-                user: { is_active: true },
-                post: {
-                  is_active: true,
-                  author: {
-                    is_active: true,
-                    OR: [
-                      {
-                        followers: {
-                          some: {
-                            followerId: userId,
-                          },
-                        },
-                      },
-                      {
-                        id: userId,
-                      },
-                    ],
+                OR: [
+                  {
+                    user: {
+                      is_active: true,
+                      followers: { some: { followerId: userId } },
+                    },
                   },
-                  NOT: type ? { product: null } : {},
-                },
+                  {
+                    post: {
+                      is_active: true,
+                      author: {
+                        is_active: true,
+                        followers: { some: { followerId: userId } },
+                      },
+                    },
+                  },
+                ],
+                NOT: [
+                  type === "product" ? { product: null } : {},
+                  live ? { live_link: null } : {},
+                ],
               }
             : {
                 ...query.where,
                 post: {
                   is_active: true,
-                  author: {
-                    is_active: true,
-                  },
-                  tags: type
-                    ? {}
-                    : {
-                        some: {
-                          tag: {
-                            name: tagName,
-                          },
+                  author: { is_active: true },
+                  live_link: live ? { not: null } : {},
+                  tags:
+                    type === "product"
+                      ? {}
+                      : {
+                          some: { tag: { name: tagName } },
                         },
-                      },
-                  NOT: type ? { product: null } : {},
+                  NOT: [
+                    type === "product" ? { product: null } : {},
+                    live ? { live_link: null } : {},
+                  ],
                 },
+                OR: [
+                  {
+                    user: {
+                      is_active: true,
+                      followers: { some: { followerId: userId } },
+                    },
+                  },
+                  {
+                    post: {
+                      author: {
+                        followers: { some: { followerId: userId } },
+                      },
+                    },
+                  },
+                ],
               };
-      }
-
-      if (live) {
+      } else {
         query.where = {
           ...query.where,
           post: {
-            live_link: {
-              not: null,
+            is_active: true,
+            author: {
+              is_active: true,
             },
+            NOT: live ? { live_link: null } : {},
+          },
+          user: {
+            is_active: true,
           },
         };
       }

@@ -226,8 +226,8 @@ app.get(
                       },
               };
       }
-      console.log("Post Query: ", tagName);
-      console.dir(query, { depth: null });
+      // console.log("Post Query: ", tagName);
+      // console.dir(query, { depth: null });
       // postsを取得
       const posts = await prisma.post.findMany({
         ...getPostParams(userId),
@@ -372,8 +372,8 @@ app.get(
         };
       }
 
-      console.log("Repost Query: ", tagName);
-      console.dir(query, { depth: null });
+      // console.log("Repost Query: ", tagName);
+      // console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({
         select: {

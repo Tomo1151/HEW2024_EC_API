@@ -76,10 +76,10 @@ const postProductSchema = z.object({
   description: z.string().refine(
     (value) => {
       const chars = [...value].filter((char) => char != "\r");
-      return chars.length >= 1 && chars.length <= 8192;
+      return chars.length >= 1 && chars.length <= 2048;
     },
     {
-      message: "説明は最低1文字以上で、8192文字以内でなければなりません。",
+      message: "説明は最低1文字以上で、2048文字以内でなければなりません。",
     }
   ),
   // .min(1, { message: "説明は最低1文字以上でなければなりません。" })

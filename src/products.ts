@@ -73,7 +73,17 @@ const liveProductSchema = z.object({
 const postProductSchema = z.object({
   type: z.literal("product"),
   name: z.string().min(1),
-  description: z.string().min(1),
+  description: z.string().refine(
+    (value) => {
+      const chars = [...value].filter((char) => char != "\r");
+      return chars.length >= 1 && chars.length <= 8192;
+    },
+    {
+      message: "説明は最低1文字以上で、8192文字以内でなければなりません。",
+    }
+  ),
+  // .min(1, { message: "説明は最低1文字以上でなければなりません。" })
+  // .max(8192, { message: "商品説明は8192文字以内でなければなりません" }),
   price: z.string().min(1).optional(),
   "tags[]": z.array(z.string()).optional(),
   quoted_ref: z.string().length(25).optional(),

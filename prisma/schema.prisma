@@ -47,7 +47,7 @@ model User {
 // MARK: Model Post
 model Post {
   id            String         @id @unique @default(cuid())
-  content       String
+  content       String         @db.Text
   live_link     String?
   like_count    Int            @default(0)
   ref_count     Int            @default(0)

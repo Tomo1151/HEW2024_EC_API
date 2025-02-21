@@ -32,7 +32,15 @@ const MAX_IMAGE_COUNT: number = 4;
 // MARK: スキーマ定義
 // 投稿作成POSTのスキーマ
 const postCreateSchema = z.object({
-  content: z.string().min(1),
+  content: z.string().refine(
+    (value) => {
+      const chars = [...value].filter((char) => char != "\r");
+      return chars.length >= 1 && chars.length <= 256;
+    },
+    {
+      message: "説明は最低1文字以上で、256文字以内でなければなりません。",
+    }
+  ),
   quoted_ref: z.string().length(25).optional(),
   replied_ref: z.string().length(25).optional(),
   "tags[]": z.array(z.string().min(1).max(64)).optional(),
@@ -218,8 +226,8 @@ app.get(
                       },
               };
       }
-      console.log("Post Query: ", tagName);
-      console.dir(query, { depth: null });
+      // console.log("Post Query: ", tagName);
+      // console.dir(query, { depth: null });
       // postsを取得
       const posts = await prisma.post.findMany({
         ...getPostParams(userId),
@@ -364,8 +372,8 @@ app.get(
         };
       }
 
-      console.log("Repost Query: ", tagName);
-      console.dir(query, { depth: null });
+      // console.log("Repost Query: ", tagName);
+      // console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({
         select: {

@@ -201,7 +201,8 @@ app.get(
                 },
               };
       }
-
+      // console.log("Post Query: ", tagName);
+      // console.dir(query, { depth: null });
       // postsを取得
       const posts = await prisma.post.findMany({
         ...getPostParams(userId),
@@ -267,8 +268,11 @@ app.get(
           tagName === "フォロー中"
             ? {
                 ...query.where,
+                user: { is_active: true },
                 post: {
+                  is_active: true,
                   author: {
+                    is_active: true,
                     OR: [
                       {
                         followers: {
@@ -287,6 +291,10 @@ app.get(
             : {
                 ...query.where,
                 post: {
+                  is_active: true,
+                  author: {
+                    is_active: true,
+                  },
                   tags: {
                     some: {
                       tag: {
@@ -309,19 +317,7 @@ app.get(
         };
       }
 
-      query.where = {
-        ...query.where,
-        post: {
-          is_active: true,
-          author: {
-            is_active: true,
-          },
-        },
-        user: {
-          is_active: true,
-        },
-      };
-
+      // console.log("Repost Query: ", tagName);
       // console.dir(query, { depth: null });
 
       const reposts = await prisma.repost.findMany({

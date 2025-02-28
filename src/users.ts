@@ -28,14 +28,11 @@ const userUpdateSchema = z
     icon: z
       .custom<File>()
       .refine((file) => file.size < 1024 * 1024 * 5, {
-        message: "Icon size must be less than 5MB",
+        message: "画像ファイルのサイズは5MiBまでです",
       })
       .refine(
-        (file) =>
-          ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
-            file.type
-          ),
-        { message: "Icon must be jpeg, png, gif, or webp" }
+        (file) => ["image/jpeg", "image/png", "image/gif"].includes(file.type),
+        { message: "画像ファイルの形式はJPEG/PNG/GIFでなければなりません" }
       )
       .optional(),
   })

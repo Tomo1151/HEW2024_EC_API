@@ -25,7 +25,6 @@ const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
   "image/jpeg",
   "image/png",
   "image/gif",
-  "image/webp",
 ];
 const MAX_IMAGE_COUNT: number = 4;
 
@@ -77,7 +76,7 @@ const postCreateSchema = z.object({
           IMAGE_TYPES.includes(file.type as IMAGE_MIME_TYPE)
         );
       },
-      { message: "画像ファイルの形式はJPEG/PNG/GIF/WEBPでなければなりません" }
+      { message: "画像ファイルの形式はJPEG/PNG/GIFでなければなりません" }
     )
     .optional(),
 });

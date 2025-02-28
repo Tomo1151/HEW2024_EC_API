@@ -24,7 +24,6 @@ const IMAGE_TYPES: Array<IMAGE_MIME_TYPE> = [
   "image/jpeg",
   "image/png",
   "image/gif",
-  "image/webp",
 ];
 const PRODUCT_DATA_TYPES: Array<string> = [
   "application/zip",
@@ -162,7 +161,7 @@ const postProductSchema = z.object({
           });
         }
       },
-      { message: "画像ファイルの形式はJPEG/PNG/GIF/WEBPでなければなりません" }
+      { message: "画像ファイルの形式はJPEG/PNG/GIFでなければなりません" }
     ),
 });
 

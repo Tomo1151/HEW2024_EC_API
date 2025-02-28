@@ -6,11 +6,7 @@ export type jsonResponse = {
 };
 
 export type BlobContainerName = "icon" | "post" | "product";
-export type IMAGE_MIME_TYPE =
-  | "image/jpeg"
-  | "image/png"
-  | "image/gif"
-  | "image/webp";
+export type IMAGE_MIME_TYPE = "image/jpeg" | "image/png" | "image/gif";
 
 export type PRODUCT_DATA_TYPE =
   | "application/zip"
